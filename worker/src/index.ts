@@ -10,10 +10,11 @@ app.use(express.json({ limit: "140mb" }));
 const port = Number(process.env.PORT || 8080);
 const token = process.env.WORKER_API_TOKEN;
 if (!token || token.length < 32) throw new Error("WORKER_API_TOKEN must be configured with at least 32 characters");
+const requiredToken: string = token;
 
 function authorized(req: express.Request, res: express.Response, next: express.NextFunction) {
   const supplied = (req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
-  const a = Buffer.from(supplied); const b = Buffer.from(token);
+  const a = Buffer.from(supplied); const b = Buffer.from(requiredToken);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return res.status(401).json({ error: "Unauthorized" });
   next();
 }
@@ -62,7 +63,7 @@ app.post("/jobs/publish", authorized, async (req, res) => {
   } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : "Queue error" }); }
 });
 app.get("/jobs/:id", authorized, async (req, res) => {
-  const job = await renderQueue.getJob(req.params.id) || await publishQueue.getJob(req.params.id);
+  const job = await renderQueue.getJob(String(req.params.id)) || await publishQueue.getJob(req.params.id);
   if (!job) return res.status(404).json({ error: "Job not found" });
   res.json({ id: job.id, name: job.name, state: await job.getState(), progress: job.progress, result: job.returnvalue, failedReason: job.failedReason });
 });
