@@ -4,7 +4,7 @@ import { getYouTubeChannels, selectYouTubeChannel } from "../../../../lib/youtub
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const channels = await getYouTubeChannels();
     return NextResponse.json({
@@ -20,7 +20,7 @@ export async function GET() {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
     const channelId = typeof body.channelId === "string" ? body.channelId.trim() : "";
