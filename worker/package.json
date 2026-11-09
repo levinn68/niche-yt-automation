@@ -1,0 +1,26 @@
+{
+  "name": "niche-yt-render-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "tsc -p tsconfig.json", "start": "node dist/index.js", "dev": "tsx watch src/index.ts" },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@remotion/bundler": "^4.0.279",
+    "@remotion/renderer": "^4.0.279",
+    "bullmq": "^5.41.9",
+    "express": "^4.21.2",
+    "fflate": "^0.8.2",
+    "googleapis": "^144.0.0",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
+    "remotion": "^4.0.279"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
