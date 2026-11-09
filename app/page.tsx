@@ -51,7 +51,7 @@ export default function StudioPage() {
   const [loginError, setLoginError] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiStyle, setAiStyle] = useState("clean motion graphics");
-  const [aiBusy, setAiBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);\n  const [generatedMeta, setGeneratedMeta] = useState<{compositionId:string;width:number;height:number;fps:number;durationInFrames:number;entryPoint:string} | null>(null);
   const [renderBusy, setRenderBusy] = useState(false);
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
@@ -85,7 +85,7 @@ export default function StudioPage() {
       const response = await fetch("/api/ai/generate-remotion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: aiPrompt, format: format === "16:9" ? "16:9" : "9:16", style: aiStyle }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gemini gagal membuat source.");
-      setCode(data.code); setZipFile(null);
+      setCode(data.code); setZipFile(null);\n      setGeneratedMeta({ compositionId: data.compositionId || "Main", width: Number(data.width) || (format === "16:9" ? 1920 : 1080), height: Number(data.height) || (format === "16:9" ? 1080 : 1920), fps: Number(data.fps) || 30, durationInFrames: Number(data.durationInFrames) || 900, entryPoint: data.entryPoint || "src/index.tsx" });
       setMessage("Source Remotion berhasil dibuat. Periksa dan Analyze project sebelum render.");
     } catch (err) { setError(err instanceof Error ? err.message : "AI generation gagal."); }
     finally { setAiBusy(false); }
@@ -100,10 +100,10 @@ export default function StudioPage() {
     if (!compositionId) return;
     const form = new FormData();
     if (zipFile) form.append("file", zipFile); else form.append("code", code);
-    form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
+    form.append("entryPoint", generatedMeta?.entryPoint || inspect?.entryFile || "src/index.tsx");
     form.append("compositionId", compositionId);
     form.append("width", String(width)); form.append("height", String(height));
-    form.append("fps", "30"); form.append("durationInFrames", "900");
+    form.append("fps", String(generatedMeta?.fps || 30)); form.append("durationInFrames", String(generatedMeta?.durationInFrames || 900));
     setRenderBusy(true);
     try {
       const response = await fetch("/api/render", { method: "POST", body: form });
