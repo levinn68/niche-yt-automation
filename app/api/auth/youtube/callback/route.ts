@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const youtube = google.youtube({ version: "v3", auth: oauth });
     const [channelResponse, userResponse] = await Promise.all([
       youtube.channels.list({ part: ["snippet"], mine: true, maxResults: 50 }),
-      google.oauth2("v2").userinfo.get({ auth: oauth })
+      google.oauth2({ version: "v2", auth: oauth }).userinfo.get()
     ]);
     const channels = (channelResponse.data.items || []).flatMap(item => item.id && item.snippet?.title ? [{
       id: item.id, title: item.snippet.title, thumbnail: item.snippet.thumbnails?.default?.url || null
