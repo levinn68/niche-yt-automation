@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStudioAuthenticated } from "@/lib/studio-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(request: NextRequest) {
+  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "ELEVENLABS_API_KEY belum diatur di environment server." }, { status: 503 });
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {\n  if (!isStudioAuthenticated
       status: 200,
       headers: {
         "Content-Type": "audio/mpeg",
-        "Content-Disposition": 'inline; filename="niche-yt-narration.mp3"',
+        "Content-Disposition": 'inline; filename="creator-studio-narration.mp3"',
         "Cache-Control": "no-store"
       }
     });
