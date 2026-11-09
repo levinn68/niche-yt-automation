@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import YouTubeChannelPicker from "./components/youtube-channel-picker";
 import {
   AudioLines, Clapperboard, Film, FolderUp, LayoutDashboard, Mic2,
@@ -45,6 +45,66 @@ export default function StudioPage() {
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [studioAuthenticated, setStudioAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiStyle, setAiStyle] = useState("clean motion graphics");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [renderBusy, setRenderBusy] = useState(false);
+  const [renderJobId, setRenderJobId] = useState("");
+  const [renderState, setRenderState] = useState("");
+
+  useEffect(() => { fetch("/api/auth/studio").then(r => r.json()).then(d => setStudioAuthenticated(Boolean(d.authenticated))).catch(() => setStudioAuthenticated(false)).finally(() => setAuthLoading(false)); }, []);
+
+  async function loginStudio() {
+    setLoginError("");
+    try {
+      const response = await fetch("/api/auth/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: loginPassword }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Login gagal.");
+      setStudioAuthenticated(true); setLoginPassword("");
+    } catch (err) { setLoginError(err instanceof Error ? err.message : "Login gagal."); }
+  }
+
+  async function generateRemotion() {
+    setError(""); setMessage("");
+    if (!aiPrompt.trim()) { setError("Tulis ide video dulu."); return; }
+    setAiBusy(true);
+    try {
+      const response = await fetch("/api/ai/generate-remotion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: aiPrompt, format: format === "16:9" ? "16:9" : "9:16", style: aiStyle }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Gemini gagal membuat source.");
+      setCode(data.code); setZipFile(null);
+      setMessage("Source Remotion berhasil dibuat. Periksa dan Analyze project sebelum render.");
+    } catch (err) { setError(err instanceof Error ? err.message : "AI generation gagal."); }
+    finally { setAiBusy(false); }
+  }
+
+  async function startRender() {
+    setError(""); setMessage("");
+    if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
+    const width = format === "16:9" ? 1920 : 1080;
+    const height = format === "16:9" ? 1080 : 1920;
+    const compositionId = window.prompt("Composition ID persis dari project Remotion:", "Main");
+    if (!compositionId) return;
+    const form = new FormData();
+    if (zipFile) form.append("file", zipFile); else form.append("code", code);
+    form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
+    form.append("compositionId", compositionId);
+    form.append("width", String(width)); form.append("height", String(height));
+    form.append("fps", "30"); form.append("durationInFrames", "900");
+    setRenderBusy(true);
+    try {
+      const response = await fetch("/api/render", { method: "POST", body: form });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Worker menolak render.");
+      setRenderJobId(data.jobId); setRenderState("queued");
+      setMessage("Render masuk antrean. Job ID: " + data.jobId);
+    } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
+    finally { setRenderBusy(false); }
+  }
 
   const nav = [
     { label: "Overview", icon: LayoutDashboard },
@@ -132,6 +192,9 @@ export default function StudioPage() {
 
   const ratioLabel = useMemo(() => selectedFormat, [selectedFormat]);
 
+  if (authLoading) return <main className="shell"><div className="panel" style={{ margin: "auto", padding: 32 }}>Memeriksa sesi studio...</div></main>;
+  if (!studioAuthenticated) return <main className="shell"><section className="panel" style={{ maxWidth: 420, margin: "12vh auto", padding: 28 }}><div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><div><b>NICHE YT</b><span>STUDIO LOGIN</span></div></div><h2>Masuk ke Creator Studio</h2><p>Area studio dilindungi password.</p>{loginError && <div className="alert error-alert">{loginError}</div>}<input className="wide-input" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="Studio password" onKeyDown={e => e.key === "Enter" && void loginStudio()}/><button className="primary-btn" style={{ marginTop: 14, width: "100%" }} onClick={loginStudio}>Login</button></section></main>;
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -153,6 +216,8 @@ export default function StudioPage() {
 
           <YouTubeChannelPicker />
 
+          <section className="panel" style={{ marginBottom: 24 }}><div className="panel-title"><div className="icon-box purple"><Sparkles size={18}/></div><div><b>Gemini Remotion Generator</b><small>Generate a starter composition from a brief</small></div></div><textarea className="script-input" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe your video, scene sequence, motion, and narration cues..."/><div className="field-row"><label>Visual style</label><select value={aiStyle} onChange={e => setAiStyle(e.target.value)}><option>clean motion graphics</option><option>doodle animation</option><option>cinematic documentary</option><option>minimal infographic</option><option>3D typography</option></select></div><button className="secondary-btn" onClick={generateRemotion} disabled={aiBusy}>{aiBusy ? "Generating..." : "Generate Remotion source"}</button></section>
+
           <div className="stats-grid">
             <div className="stat-card"><span>PROJECT SOURCE</span><b>{inspect ? "1" : "0"}</b><small>{inspect ? inspect.filename : "Belum ada project diperiksa"}</small></div>
             <div className="stat-card"><span>DETECTED FORMAT</span><b>{inspect?.ratio ?? "—"}</b><small>{inspect?.width && inspect?.height ? inspect.width + " × " + inspect.height : "Menunggu inspeksi"}</small></div>
@@ -170,7 +235,7 @@ export default function StudioPage() {
               <div className="inline-controls"><label>Output format</label><select value={format} onChange={e => setFormat(e.target.value as Format)}><option value="auto">Auto detect from composition</option><option value="9:16">Force 9:16 Portrait</option><option value="16:9">Force 16:9 Landscape</option></select></div>
               <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
               {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
-              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button>
+              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button><button className="secondary-btn full" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button>{renderJobId && <div className="notice">Render job: {renderJobId} · {renderState}</div>}
             </div>
 
             <div className="panel voice-panel">
