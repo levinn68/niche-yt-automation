@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { isStudioAuthenticated } from "../../../../../lib/studio-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ function config() {
 }
 
 export async function GET(request: NextRequest) {
+  if (!isStudioAuthenticated(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const cfg = config();
     const state = randomBytes(32).toString("hex");
@@ -20,7 +24,7 @@ export async function GET(request: NextRequest) {
     const signature = createHmac("sha256", secret).update(state).digest("hex");
     const oauth = new google.auth.OAuth2(cfg.clientId, cfg.clientSecret, cfg.redirectUri);
     const url = oauth.generateAuthUrl({
-      access_type: "offline", prompt: "consent", include_granted_scopes: true,
+      access_type: "offline", prompt: "select_account consent", include_granted_scopes: true,
       scope: ["openid", "email", "https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube.upload"],
       state: state + "." + signature
     });
