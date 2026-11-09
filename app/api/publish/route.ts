@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStudioAuthenticated } from "../../../lib/studio-auth";
 import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  const expected = process.env.STUDIO_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "") || "";
-  if (!expected || supplied !== expected) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const workerUrl = process.env.RENDER_WORKER_URL;
   const workerToken = process.env.WORKER_API_TOKEN;
   if (!workerUrl || !workerToken) return NextResponse.json({ error: "Publishing worker belum dikonfigurasi." }, { status: 503 });
