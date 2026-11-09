@@ -54,7 +54,7 @@ app.post("/jobs/publish", authorized, async (req, res) => {
     if (!body.jobId || !body.objectKey || !body.title || !body.channelId) return res.status(400).json({ error: "Missing publish job fields" });
     if (body.publishAt && Number.isNaN(Date.parse(body.publishAt))) return res.status(400).json({ error: "Invalid publishAt" });
     const job = await publishQueue.add("publish", body, {
-      jobId: body.jobId, delay: body.publishAt ? Math.max(0, Date.parse(body.publishAt) - Date.now()) : 0,
+      jobId: body.jobId,
       attempts: 5, backoff: { type: "exponential", delay: 10000 },
       removeOnComplete: { age: 604800, count: 1000 }, removeOnFail: { age: 1209600, count: 2000 }
     });
