@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "ELEVENLABS_API_KEY belum diatur di environment server." }, { status: 503 });
