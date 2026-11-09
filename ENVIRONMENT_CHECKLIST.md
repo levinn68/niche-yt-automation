@@ -9,13 +9,16 @@ Upload these values to the relevant hosting service later. Never commit actual s
 - `DATABASE_URL`: Supabase PostgreSQL connection string (server-side only; use the Supabase pooler appropriate for serverless)
 - `APP_ENCRYPTION_KEY`: 32-byte hex or base64 key
 - `YOUTUBE_WORKSPACE_ID`: optional workspace key, default `default`
-- `YOUTUBE_CLIENT_ID`
+- `YOUTUBE_CLIENT_ID`: Google OAuth Web application client ID (one-time owner setup)
+- `YOUTUBE_CLIENT_SECRET`: Google OAuth client secret (one-time owner setup)
 - `YOUTUBE_CLIENT_SECRET`
 - `YOUTUBE_REDIRECT_URI`: `https://<app-domain>/api/auth/youtube/callback`
 - `ELEVENLABS_API_KEY`
 - `ELEVENLABS_DEFAULT_VOICE_ID`
 - `GEMINI_API_KEY`
 - `GEMINI_MODEL`: optional, default `gemini-2.5-flash`
+- `OPENAI_API_KEY`: OpenAI API key for thumbnail generation (server-side only)
+- `OPENAI_IMAGE_MODEL`: optional image model override
 - `RENDER_WORKER_URL`: private worker URL
 - `WORKER_API_TOKEN`: same secret as worker service
 
@@ -45,6 +48,11 @@ Apply migrations in order:
 The current live database has all three migration effects applied. Keep `niche_yt` private; do not grant Data API access to `anon` or `authenticated`.
 
 ## Google Cloud OAuth
+- Create one OAuth 2.0 Client ID of type **Web application** for the studio owner, not one per YouTube user.
+- Add the exact production callback URL to Authorized redirect URIs: `https://<your-app-domain>/api/auth/youtube/callback`.
+- Add the production app domain to Authorized JavaScript origins only if a Google flow explicitly requires it.
+- Publish/verify the OAuth consent screen as required for external users. While in Testing, only listed test users can connect.
+- Each creator then clicks **Connect YouTube**, chooses their Google account, and grants access. They do not enter API keys or Channel IDs.
 - Configure OAuth consent screen.
 - Add authorized redirect URI exactly matching `YOUTUBE_REDIRECT_URI`.
 - Enable YouTube Data API v3.
