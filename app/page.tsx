@@ -105,7 +105,8 @@ export default function StudioPage() {
       setMessage("Publishing job masuk antrean: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }
     finally { setPublishBusy(false); }
-  }\n
+  }
+
   async function startRender() {
     setError(""); setMessage("");
     if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
