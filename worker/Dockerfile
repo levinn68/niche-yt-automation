@@ -3,10 +3,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=dev
 COPY tsconfig.json ./
+RUN npm install --no-audit --no-fund
 COPY src ./src
-RUN npm install --no-save typescript && npx tsc -p tsconfig.json
+RUN npm run build && npm prune --omit=dev
 ENV NODE_ENV=production
 EXPOSE 8080
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]
