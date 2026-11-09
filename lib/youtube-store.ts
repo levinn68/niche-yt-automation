@@ -7,14 +7,12 @@ const DB_SCHEMA = "niche_yt";
 
 function pool() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL belum dikonfigurasi.");
-  if (!global.__nichePgPool) {
-    global.__nichePgPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 5,
-      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: true } : undefined,
-      application_name: "niche-yt-studio"
-    });
-  }
+  if (!global.__nichePgPool) global.__nichePgPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 5,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: true } : undefined,
+    application_name: "niche-yt-studio"
+  });
   return global.__nichePgPool;
 }
 
@@ -72,7 +70,6 @@ export async function saveYouTubeConnection(input: {
 
     const accountId = saved.rows[0].id as string;
     await client.query(`DELETE FROM ${DB_SCHEMA}.youtube_channels WHERE account_id=$1`, [accountId]);
-
     for (const channel of input.channels) {
       await client.query(
         `INSERT INTO ${DB_SCHEMA}.youtube_channels
@@ -84,7 +81,14 @@ export async function saveYouTubeConnection(input: {
         [accountId, channel.id, channel.title, channel.thumbnail ?? null]
       );
     }
-
+    await client.query(
+      `UPDATE ${DB_SCHEMA}.youtube_accounts
+       SET selected_channel_id = CASE
+         WHEN selected_channel_id IN (SELECT channel_id FROM ${DB_SCHEMA}.youtube_channels WHERE account_id=$1)
+         THEN selected_channel_id ELSE NULL END
+       WHERE id=$1`,
+      [accountId]
+    );
     await client.query("COMMIT");
     return { accountId, channelCount: input.channels.length };
   } catch (error) {
@@ -97,7 +101,8 @@ export async function saveYouTubeConnection(input: {
 
 export async function getYouTubeChannels() {
   const result = await pool().query(
-    `SELECT c.channel_id AS id, c.channel_title AS title, c.thumbnail_url AS thumbnail
+    `SELECT c.channel_id AS id, c.channel_title AS title, c.thumbnail_url AS thumbnail,
+            (a.selected_channel_id = c.channel_id) AS selected
      FROM ${DB_SCHEMA}.youtube_channels c
      JOIN ${DB_SCHEMA}.youtube_accounts a ON a.id=c.account_id
      WHERE a.workspace_id=$1
@@ -105,4 +110,20 @@ export async function getYouTubeChannels() {
     [process.env.YOUTUBE_WORKSPACE_ID || "default"]
   );
   return result.rows;
+}
+
+export async function selectYouTubeChannel(channelId: string) {
+  const result = await pool().query(
+    `UPDATE ${DB_SCHEMA}.youtube_accounts a
+     SET selected_channel_id=$2, updated_at=NOW()
+     WHERE a.workspace_id=$1
+       AND EXISTS (
+         SELECT 1 FROM ${DB_SCHEMA}.youtube_channels c
+         WHERE c.account_id=a.id AND c.channel_id=$2
+       )
+     RETURNING a.selected_channel_id`,
+    [process.env.YOUTUBE_WORKSPACE_ID || "default", channelId]
+  );
+  if (!result.rowCount) throw new Error("Channel tidak ditemukan di akun yang terhubung.");
+  return { selectedChannelId: result.rows[0].selected_channel_id as string };
 }
