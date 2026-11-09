@@ -63,7 +63,7 @@ app.post("/jobs/publish", authorized, async (req, res) => {
   } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : "Queue error" }); }
 });
 app.get("/jobs/:id", authorized, async (req, res) => {
-  const job = await renderQueue.getJob(String(req.params.id)) || await publishQueue.getJob(req.params.id);
+  const job = await renderQueue.getJob(String(req.params.id)) || await publishQueue.getJob(String(req.params.id));
   if (!job) return res.status(404).json({ error: "Job not found" });
   res.json({ id: job.id, name: job.name, state: await job.getState(), progress: job.progress, result: job.returnvalue, failedReason: job.failedReason });
 });
