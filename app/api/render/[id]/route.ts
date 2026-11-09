@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStudioAuthenticated } from "../../../../lib/studio-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
-  const expected = process.env.STUDIO_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "") || "";
-  if (!expected || supplied !== expected) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const workerUrl = process.env.RENDER_WORKER_URL;
   const workerToken = process.env.WORKER_API_TOKEN;
   if (!workerUrl || !workerToken) return NextResponse.json({ error: "Render worker belum dikonfigurasi." }, { status: 503 });
