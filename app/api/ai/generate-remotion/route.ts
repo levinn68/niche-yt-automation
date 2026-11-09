@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStudioAuthenticated } from "../../../../lib/studio-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -6,9 +7,7 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ error: "GEMINI_API_KEY belum dikonfigurasi." }, { status: 503 });
-  const expected = process.env.STUDIO_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "") || "";
-  if (!expected || supplied !== expected) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
     const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
