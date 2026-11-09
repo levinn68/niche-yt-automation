@@ -1,73 +1,65 @@
 # NICHE YT Studio
 
-AI-assisted video production workspace for Remotion projects and ElevenLabs voice generation.
+AI-assisted YouTube video production workspace built with Next.js, Remotion, Gemini, ElevenLabs, Supabase PostgreSQL, BullMQ, and Cloudflare R2.
 
-## Current foundation
+## Implemented in the repository
 
-- Dark Next.js studio dashboard
-- Remotion TSX/JSX paste and ZIP upload UI
-- Server-side project inspection endpoint for pasted code and ZIP archives
-- Initial 9:16 / 16:9 aspect-ratio detection
-- ElevenLabs text-to-speech API endpoint (server-side API key)
-- Audio upload and local browser preview
-- Separate Shorts and Long-Form niche/schedule controls
-- Per-video title, description, and thumbnail preparation UI
-- YouTube OAuth start/callback flow with CSRF state validation
-- Google account email and YouTube channel discovery
-- AES-256-GCM encrypted access/refresh token storage in PostgreSQL
-- Channel-list API for the connected workspace
-- Health endpoint for integration environment variables
+### Phase 1 — Studio foundation
+- Next.js dark dashboard
+- Remotion TSX/JSX paste and ZIP inspection
+- YouTube OAuth with CSRF state validation and encrypted token storage
+- YouTube channel list and persisted selected-channel picker
+- ElevenLabs text-to-speech endpoint
+- Separate Shorts and Long-Form settings
+- Password-protected studio session using an HttpOnly signed cookie
 
-## Database setup
+### Phase 2 — Render engine foundation
+- Dedicated Node.js worker under `worker/`
+- Remotion bundle, composition selection, H.264 MP4 render
+- BullMQ render queue with retry/backoff and progress
+- Cloudflare R2-compatible object storage adapter
+- Render enqueue and job status API routes
+- Dockerfile with FFmpeg and Chromium
 
-The YouTube account migration creates a dedicated `niche_yt` PostgreSQL schema. It does not create tables in `public`.
+### Phase 3 — AI production foundation
+- Gemini API route that generates a complete Remotion starter composition
+- Visual style presets in the dashboard, including Doodle Animation
+- ElevenLabs narration endpoint and existing audio upload UI
+- Shorts 9:16 / Long-Form 16:9 generation choice
 
-Apply `db/migrations/001_youtube_accounts.sql` to the dedicated NICHE YT Supabase project using the SQL Editor or migration tooling. The server-side PostgreSQL connection must use a role allowed to access the private schema (normally the Supabase `postgres` role). Do not expose database credentials to the browser.
+### Phase 4 — Publishing foundation
+- BullMQ publishing queue
+- YouTube Data API upload worker
+- Selected-channel validation before upload
+- Private/unlisted/public privacy choices
+- Scheduled publishing via YouTube `publishAt`
+- Retry/backoff for transient queue failures
 
-Required server environment variables:
+## Database
 
-- `DATABASE_URL`
-- `APP_ENCRYPTION_KEY` (32-byte hex or base64)
-- `YOUTUBE_CLIENT_ID`
-- `YOUTUBE_CLIENT_SECRET`
-- `YOUTUBE_REDIRECT_URI`
-- `APP_URL`
+Private PostgreSQL schema: `niche_yt`. Migrations:
+1. `db/migrations/001_youtube_accounts.sql`
+2. `db/migrations/002_selected_youtube_channel.sql`
+3. `db/migrations/003_projects_render_publish.sql`
 
-Optional:
+The live Supabase project currently has the schema, account/channel tables, selected channel column, projects, render jobs, and publish jobs. RLS is enabled and the schema remains inaccessible to `anon` and `authenticated`; the app and worker use server-side PostgreSQL connections.
 
-- `YOUTUBE_WORKSPACE_ID` (defaults to `default`)
-- `ELEVENLABS_API_KEY`
-- `ELEVENLABS_DEFAULT_VOICE_ID`
+## Setup
 
-Add the exact callback URL to the Google Cloud OAuth client. Never commit API keys, database URLs, or OAuth secrets.
+1. Install app dependencies: `npm install`
+2. Copy `.env.example` to `.env.local` and fill server-side secrets.
+3. Run the app: `npm run dev`
+4. Configure Google Cloud OAuth and add the callback URL.
+5. Deploy the Next.js app from repository root.
+6. Deploy the worker using `worker/Dockerfile` with `worker` as its build context.
+7. Attach Redis and configure Cloudflare R2.
+8. Upload all required variables from [ENVIRONMENT_CHECKLIST.md](./ENVIRONMENT_CHECKLIST.md).
 
-## Important limitations
+## Important deployment and security requirements
 
-- Project inspection is not a Remotion render. The source is not executed by the Next.js app.
-- A dedicated isolated Node.js Remotion worker is still required for real MP4 rendering.
-- Uploaded audio and thumbnail previews currently live in browser memory; persistent project storage is not wired yet.
-- The connected channel list is available from the API; the visual channel picker and per-channel selection are still pending.
-- The account model is single-workspace. Multi-user authentication and workspace isolation are not implemented.
-- Publishing, scheduled uploads, persistent project storage, and queue processing are not enabled yet.
-
-## Local development
-
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
-
-## Planned architecture
-
-- Next.js web dashboard
-- Isolated Node.js Remotion rendering worker
-- Remotion + FFmpeg
-- ElevenLabs API
-- PostgreSQL for projects, settings, and jobs
-- Cloudflare R2 for source assets, audio, thumbnails, and MP4 outputs
-- Redis + BullMQ for render and publishing queues
-
-## Security
-
-Uploaded Remotion projects contain executable JavaScript. Never execute them inside the public Next.js web process. The render worker must be isolated with filesystem, network, CPU, memory, and execution-time limits.
+- Do not commit secrets or expose server credentials in `NEXT_PUBLIC_*` variables.
+- The render and publish API routes require the signed studio session.
+- The worker API requires a long random bearer token.
+- The worker needs access to Supabase, Redis, R2, Google OAuth credentials, and the encryption key.
+- User-provided Remotion source is executable code. The current worker is a queue-based render foundation, **not** a hardened multi-tenant sandbox. Before accepting arbitrary public uploads, isolate each render in a disposable container/VM with a non-root user, no privileged mounts, restricted network egress, CPU/memory/process/time limits, and per-job cleanup.
+- Build, deploy, live MP4 rendering, YouTube upload, and scheduled publication have not yet been verified end-to-end. Configure environment variables and run the smoke-test checklist before enabling public traffic.
