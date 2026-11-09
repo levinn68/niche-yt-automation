@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+        env:
+          APP_URL: http://localhost:3000
+          STUDIO_PASSWORD: ci-password
+          STUDIO_SESSION_SECRET: ci-session-secret-at-least-32-characters-long
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+          APP_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+
+  worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
