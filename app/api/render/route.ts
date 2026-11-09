@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStudioAuthenticated } from "../../../lib/studio-auth";
 import { randomUUID } from "node:crypto";
 import { zipSync, strToU8 } from "fflate";
 
@@ -6,9 +7,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function authorized(request: NextRequest) {
-  const expected = process.env.STUDIO_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "") || "";
-  return Boolean(expected && supplied && supplied === expected);
+  return isStudioAuthenticated(request);
 }
 
 export async function POST(request: NextRequest) {
