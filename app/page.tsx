@@ -93,13 +93,20 @@ export default function StudioPage() {
     finally { setAiBusy(false); }
   }
 
-  async function startPublish() {\n    setError(""); setMessage("");
-    if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }\n    if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }\n    setPublishBusy(true);
-    try {\n      const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });
+  async function startPublish() {
+    setError(""); setMessage("");
+    if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }
+    if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }
+    setPublishBusy(true);
+    try {
+      const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal memasukkan video ke antrean publishing.");
       setMessage("Publishing job masuk antrean: " + data.jobId);
-    } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }\n    finally { setPublishBusy(false); }\n  }\n\n  async function startRender() {
+    } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }
+    finally { setPublishBusy(false); }
+  }\n
+  async function startRender() {
     setError(""); setMessage("");
     if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
     const width = format === "16:9" ? 1920 : 1080;
