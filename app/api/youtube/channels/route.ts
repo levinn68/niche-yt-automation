@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getYouTubeChannels, selectYouTubeChannel } from "../../../../lib/youtube-store";
+import { isStudioAuthenticated } from "../../../../lib/studio-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: NextRequest) {
+  if (!isStudioAuthenticated(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const channels = await getYouTubeChannels();
     return NextResponse.json({
@@ -20,7 +24,10 @@ export async function GET(request: NextRequest) {\n  if (!isStudioAuthenticated(
   }
 }
 
-export async function PATCH(request: NextRequest) {\n  if (!isStudioAuthenticated(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function PATCH(request: NextRequest) {
+  if (!isStudioAuthenticated(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const channelId = typeof body.channelId === "string" ? body.channelId.trim() : "";
