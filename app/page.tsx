@@ -51,7 +51,8 @@ export default function StudioPage() {
   const [loginError, setLoginError] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiStyle, setAiStyle] = useState("clean motion graphics");
-  const [aiBusy, setAiBusy] = useState(false);\n  const [generatedMeta, setGeneratedMeta] = useState<{compositionId:string;width:number;height:number;fps:number;durationInFrames:number;entryPoint:string} | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [generatedMeta, setGeneratedMeta] = useState<{compositionId:string;width:number;height:number;fps:number;durationInFrames:number;entryPoint:string} | null>(null);
   const [renderBusy, setRenderBusy] = useState(false);
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
@@ -85,13 +86,20 @@ export default function StudioPage() {
       const response = await fetch("/api/ai/generate-remotion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: aiPrompt, format: format === "16:9" ? "16:9" : "9:16", style: aiStyle }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gemini gagal membuat source.");
-      setCode(data.code); setZipFile(null);\n      setGeneratedMeta({ compositionId: data.compositionId || "Main", width: Number(data.width) || (format === "16:9" ? 1920 : 1080), height: Number(data.height) || (format === "16:9" ? 1080 : 1920), fps: Number(data.fps) || 30, durationInFrames: Number(data.durationInFrames) || 900, entryPoint: data.entryPoint || "src/index.tsx" });
+      setCode(data.code); setZipFile(null);
+      setGeneratedMeta({ compositionId: data.compositionId || "Main", width: Number(data.width) || (format === "16:9" ? 1920 : 1080), height: Number(data.height) || (format === "16:9" ? 1080 : 1920), fps: Number(data.fps) || 30, durationInFrames: Number(data.durationInFrames) || 900, entryPoint: data.entryPoint || "src/index.tsx" });
       setMessage("Source Remotion berhasil dibuat. Periksa dan Analyze project sebelum render.");
     } catch (err) { setError(err instanceof Error ? err.message : "AI generation gagal."); }
     finally { setAiBusy(false); }
   }
 
-  async function startPublish() {\n    setError(""); setMessage("");\n    if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }\n    if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }\n    setPublishBusy(true);\n    try {\n      const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });\n      const data = await response.json();\n      if (!response.ok) throw new Error(data.error || "Gagal memasukkan video ke antrean publishing.");\n      setMessage("Publishing job masuk antrean: " + data.jobId);\n    } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }\n    finally { setPublishBusy(false); }\n  }\n\n  async function startRender() {
+  async function startPublish() {\n    setError(""); setMessage("");
+    if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }\n    if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }\n    setPublishBusy(true);
+    try {\n      const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Gagal memasukkan video ke antrean publishing.");
+      setMessage("Publishing job masuk antrean: " + data.jobId);
+    } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }\n    finally { setPublishBusy(false); }\n  }\n\n  async function startRender() {
     setError(""); setMessage("");
     if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
     const width = format === "16:9" ? 1920 : 1080;
