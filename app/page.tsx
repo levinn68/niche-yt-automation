@@ -55,8 +55,17 @@ export default function StudioPage() {
   const [renderBusy, setRenderBusy] = useState(false);
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderOutputKey, setRenderOutputKey] = useState("");
+  const [channelOptions, setChannelOptions] = useState<Array<{id:string;title:string}>>([]);
+  const [publishChannel, setPublishChannel] = useState("");
+  const [publishPrivacy, setPublishPrivacy] = useState("private");
+  const [publishAt, setPublishAt] = useState("");
+  const [publishBusy, setPublishBusy] = useState(false);
 
   useEffect(() => { fetch("/api/auth/studio").then(r => r.json()).then(d => setStudioAuthenticated(Boolean(d.authenticated))).catch(() => setStudioAuthenticated(false)).finally(() => setAuthLoading(false)); }, []);
+  useEffect(() => { if (!studioAuthenticated) return; fetch("/api/youtube/channels").then(r => r.json()).then(d => { const list = d.channels || []; setChannelOptions(list); setPublishChannel(d.selectedChannelId || list.find((x: {selected?:boolean}) => x.selected)?.id || ""); }).catch(() => {}); }, [studioAuthenticated]);
+  useEffect(() => { if (!renderJobId || !studioAuthenticated) return; let active = true; const poll = async () => { try { const response = await fetch("/api/render/" + encodeURIComponent(renderJobId), { cache: "no-store" }); const data = await response.json(); if (!active || !response.ok) return; setRenderState(data.state || "unknown"); setRenderProgress(typeof data.progress === "number" ? data.progress : Number(data.progress?.progress || 0)); if (data.state === "completed" && data.result?.objectKey) setRenderOutputKey(data.result.objectKey); if (data.state === "failed") setError(data.failedReason || "Render job failed."); } catch {} }; void poll(); const timer = window.setInterval(poll, 4000); return () => { active = false; window.clearInterval(timer); }; }, [renderJobId, studioAuthenticated]);
 
   async function loginStudio() {
     setLoginError("");
@@ -82,7 +91,7 @@ export default function StudioPage() {
     finally { setAiBusy(false); }
   }
 
-  async function startRender() {
+  async function startPublish() {\n    setError(""); setMessage("");\n    if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }\n    if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }\n    setPublishBusy(true);\n    try {\n      const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });\n      const data = await response.json();\n      if (!response.ok) throw new Error(data.error || "Gagal memasukkan video ke antrean publishing.");\n      setMessage("Publishing job masuk antrean: " + data.jobId);\n    } catch (err) { setError(err instanceof Error ? err.message : "Publishing gagal."); }\n    finally { setPublishBusy(false); }\n  }\n\n  async function startRender() {
     setError(""); setMessage("");
     if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
     const width = format === "16:9" ? 1920 : 1080;
@@ -100,7 +109,7 @@ export default function StudioPage() {
       const response = await fetch("/api/render", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Worker menolak render.");
-      setRenderJobId(data.jobId); setRenderState("queued");
+      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);
       setMessage("Render masuk antrean. Job ID: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
     finally { setRenderBusy(false); }
@@ -235,7 +244,7 @@ export default function StudioPage() {
               <div className="inline-controls"><label>Output format</label><select value={format} onChange={e => setFormat(e.target.value as Format)}><option value="auto">Auto detect from composition</option><option value="9:16">Force 9:16 Portrait</option><option value="16:9">Force 16:9 Landscape</option></select></div>
               <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
               {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
-              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button><button className="secondary-btn full" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button>{renderJobId && <div className="notice">Render job: {renderJobId} · {renderState}</div>}
+              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button><button className="secondary-btn full" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button>{renderJobId && <div className="notice">Render job: {renderJobId} · {renderState} · {renderProgress}% {renderOutputKey && "· MP4 ready"}</div>}
             </div>
 
             <div className="panel voice-panel">
@@ -257,7 +266,9 @@ export default function StudioPage() {
           <div className="section-heading"><div><h3>Video metadata & thumbnail</h3><p>Siapkan detail video sebelum masuk ke publishing.</p></div><span className="coming">PRE-PUBLISH</span></div>
           <div className="panel metadata-panel"><div className="metadata-fields"><div><label className="field-label">Video title</label><input value={title} onChange={e => setTitle(e.target.value)} placeholder="Enter video title"/></div><div><label className="field-label">Description</label><textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Write video description..."/></div></div><div className="thumbnail-box">{thumbUrl ? <img className="thumb-preview" src={thumbUrl} alt="Thumbnail preview"/> : <div className="thumb-placeholder"><Film size={26}/><span>THUMBNAIL</span><small>16:9 recommended</small></div>}<label className="secondary-btn file-button">Upload thumbnail<input type="file" accept="image/*" onChange={chooseThumbnail}/></label></div></div>
 
-          <footer><span>NICHE YT STUDIO · PHASE 1</span><span>Import inspection + ElevenLabs endpoint · Render worker pending</span></footer>
+          <section className="panel" style={{ marginTop: 24 }}><div className="panel-title"><div className="icon-box blue"><UploadCloud size={18}/></div><div><b>Publishing & schedule</b><small>Upload hasil render ke channel terpilih</small></div></div><div className="field-row"><label>Target channel</label><select value={publishChannel} onChange={e => setPublishChannel(e.target.value)}><option value="">Select YouTube channel</option>{channelOptions.map(channel => <option key={channel.id} value={channel.id}>{channel.title}</option>)}</select></div><div className="field-row"><label>Privacy</label><select value={publishPrivacy} onChange={e => setPublishPrivacy(e.target.value)}><option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></div><div className="field-row"><label>Schedule publish time (optional)</label><input type="datetime-local" value={publishAt} onChange={e => setPublishAt(e.target.value)}/></div><button className="primary-btn" onClick={startPublish} disabled={publishBusy || !renderOutputKey || !publishChannel}>{publishBusy ? "Queueing upload..." : publishAt ? "Schedule YouTube publish" : "Upload to YouTube"}</button>{renderOutputKey && <small className="notice">Rendered MP4: {renderOutputKey}</small>}</section>
+
+          <footer><span>NICHE YT STUDIO · PHASE 4 FOUNDATION</span><span>Import inspection + ElevenLabs endpoint · Render worker pending</span></footer>
         </div>
       </section>
     </main>
