@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
+import YouTubeChannelPicker from "./components/youtube-channel-picker";
 import {
   AudioLines, Clapperboard, Film, FolderUp, LayoutDashboard, Mic2,
   Settings2, Sparkles, UploadCloud, Youtube, Clock3, CheckCircle2,
@@ -149,6 +150,8 @@ export default function StudioPage() {
 
           {error && <div className="alert error-alert">{error}</div>}
           {message && <div className="alert success-alert">{message}</div>}
+
+          <YouTubeChannelPicker />
 
           <div className="stats-grid">
             <div className="stat-card"><span>PROJECT SOURCE</span><b>{inspect ? "1" : "0"}</b><small>{inspect ? inspect.filename : "Belum ada project diperiksa"}</small></div>
