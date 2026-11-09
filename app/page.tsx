@@ -176,7 +176,7 @@ export default function StudioPage() {
       const url = URL.createObjectURL(blob);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(url);
-      setAudioFile(new File([blob], "niche-yt-narration.mp3", { type: "audio/mpeg" }));
+      setAudioFile(new File([blob], "creator-studio-narration.mp3", { type: "audio/mpeg" }));
       setMessage("Audio berhasil dibuat. Dengarkan preview sebelum dipakai di video.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Voice generation gagal.");
@@ -210,23 +210,23 @@ export default function StudioPage() {
   const ratioLabel = useMemo(() => selectedFormat, [selectedFormat]);
 
   if (authLoading) return <main className="shell"><div className="panel" style={{ margin: "auto", padding: 32 }}>Memeriksa sesi studio...</div></main>;
-  if (!studioAuthenticated) return <main className="shell"><section className="panel" style={{ maxWidth: 420, margin: "12vh auto", padding: 28 }}><div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><div><b>NICHE YT</b><span>STUDIO LOGIN</span></div></div><h2>Masuk ke Creator Studio</h2><p>Area studio dilindungi password.</p>{loginError && <div className="alert error-alert">{loginError}</div>}<input className="wide-input" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="Studio password" onKeyDown={e => e.key === "Enter" && void loginStudio()}/><button className="primary-btn" style={{ marginTop: 14, width: "100%" }} onClick={loginStudio}>Login</button></section></main>;
+  if (!studioAuthenticated) return <main className="shell"><section className="panel" style={{ maxWidth: 420, margin: "12vh auto", padding: 28 }}><div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><div><b>CREATOR</b><span>STUDIO LOGIN</span></div></div><h2>Masuk ke Creator Studio</h2><p>Area studio dilindungi password.</p>{loginError && <div className="alert error-alert">{loginError}</div>}<input className="wide-input" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="Studio password" onKeyDown={e => e.key === "Enter" && void loginStudio()}/><button className="primary-btn" style={{ marginTop: 14, width: "100%" }} onClick={loginStudio}>Login</button></section></main>;
 
   return (
     <main className="shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><div><b>NICHE YT</b><span>STUDIO</span></div></div>
+        <div className="brand"><div className="brand-mark"><Sparkles size={19}/></div><div><b>CREATOR</b><span>STUDIO</span></div></div>
         <div className="workspace"><span className="avatar">N</span><div><b>Creator Workspace</b><small>Personal studio</small></div></div>
         <div className="nav-label">WORKSPACE</div>
         {nav.map(({label, icon: Icon}) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => setActive(label)}><Icon size={17}/>{label}</button>)}
-        <div className="sidebar-bottom"><div className="connection-dot"/> Phase 1 workspace <span>BUILD</span></div>
+        <div className="sidebar-bottom"><div className="connection-dot"/> Creator workspace <span>BUILD</span></div>
       </aside>
 
       <section className="main">
         <header className="topbar"><div><span className="eyebrow">VIDEO PRODUCTION WORKSPACE</span><h1>{active}</h1></div><div className="top-actions"><button className="account-btn" onClick={() => { window.location.href = "/api/auth/youtube/start"; }}><Youtube size={17}/> Connect YouTube <span className="status-pill">OAuth</span></button><span className="user-avatar">YT</span></div></header>
 
         <div className="content">
-          <section className="welcome-row"><div><div className="eyebrow">CREATOR CONTROL CENTER</div><h2>Turn your ideas into videos.</h2><p>Masukkan project Remotion, siapkan voice-over, lalu lanjutkan ke proses render.</p></div><div className="phase-tag"><span/> PHASE 1 · RENDER + VOICE</div></section>
+          <section className="welcome-row"><div><div className="eyebrow">CREATOR CONTROL CENTER</div><h2>Turn your ideas into videos.</h2><p>Masukkan project Remotion, siapkan voice-over, lalu lanjutkan ke proses render.</p></div><div className="phase-tag"><span/> CREATOR STUDIO · WORKSPACE</div></section>
 
           {error && <div className="alert error-alert">{error}</div>}
           {message && <div className="alert success-alert">{message}</div>}
@@ -276,7 +276,7 @@ export default function StudioPage() {
 
           <section className="panel" style={{ marginTop: 24 }}><div className="panel-title"><div className="icon-box blue"><UploadCloud size={18}/></div><div><b>Publishing & schedule</b><small>Upload hasil render ke channel terpilih</small></div></div><div className="field-row"><label>Target channel</label><select value={publishChannel} onChange={e => setPublishChannel(e.target.value)}><option value="">Select YouTube channel</option>{channelOptions.map(channel => <option key={channel.id} value={channel.id}>{channel.title}</option>)}</select></div><div className="field-row"><label>Privacy</label><select value={publishPrivacy} onChange={e => setPublishPrivacy(e.target.value)}><option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></div><div className="field-row"><label>Schedule publish time (optional)</label><input type="datetime-local" value={publishAt} onChange={e => setPublishAt(e.target.value)}/></div><button className="primary-btn" onClick={startPublish} disabled={publishBusy || !renderOutputKey || !publishChannel}>{publishBusy ? "Queueing upload..." : publishAt ? "Schedule YouTube publish" : "Upload to YouTube"}</button>{renderOutputKey && <small className="notice">Rendered MP4: {renderOutputKey}</small>}</section>
 
-          <footer><span>NICHE YT STUDIO · PHASE 4 FOUNDATION</span><span>Import inspection + ElevenLabs endpoint · Render worker pending</span></footer>
+          <footer><span>CREATOR STUDIO · PHASE 4 FOUNDATION</span><span>Import inspection + ElevenLabs endpoint · Render worker pending</span></footer>
         </div>
       </section>
     </main>
