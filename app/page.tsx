@@ -142,7 +142,7 @@ export default function StudioPage() {
       </aside>
 
       <section className="main">
-        <header className="topbar"><div><span className="eyebrow">VIDEO PRODUCTION WORKSPACE</span><h1>{active}</h1></div><div className="top-actions"><button className="account-btn" onClick={() => setMessage("YouTube OAuth belum diaktifkan. Tambahkan kredensial OAuth di environment server setelah domain callback ditentukan.")}><Youtube size={17}/> Connect YouTube <span className="status-pill">Setup required</span></button><span className="user-avatar">YT</span></div></header>
+        <header className="topbar"><div><span className="eyebrow">VIDEO PRODUCTION WORKSPACE</span><h1>{active}</h1></div><div className="top-actions"><button className="account-btn" onClick={() => { window.location.href = "/api/auth/youtube/start"; }}><Youtube size={17}/> Connect YouTube <span className="status-pill">OAuth</span></button><span className="user-avatar">YT</span></div></header>
 
         <div className="content">
           <section className="welcome-row"><div><div className="eyebrow">CREATOR CONTROL CENTER</div><h2>Turn your ideas into videos.</h2><p>Masukkan project Remotion, siapkan voice-over, lalu lanjutkan ke proses render.</p></div><div className="phase-tag"><span/> PHASE 1 · RENDER + VOICE</div></section>
