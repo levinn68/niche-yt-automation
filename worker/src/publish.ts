@@ -1,7 +1,8 @@
 import { google } from "googleapis";
 import { Pool } from "pg";
 import { createDecipheriv } from "node:crypto";
-import { createReadStream, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { writeFile, mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { getObject } from "./storage.js";
@@ -29,11 +30,9 @@ export async function publishJob(payload: PublishPayload) {
   const account = result.rows[0];
   if (!account) throw new Error("Target channel is not the selected connected channel");
   if (!account.refresh_token_enc) throw new Error("Missing refresh token. Reconnect YouTube with offline access.");
+  if (!account.access_token_enc) throw new Error("Missing encrypted access token.");
   const oauth = new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, process.env.YOUTUBE_REDIRECT_URI);
-  oauth.setCredentials({
-    refresh_token: decrypt(account.refresh_token_enc),
-    access_token: decrypt(account.access_token_enc)
-  });
+  oauth.setCredentials({ refresh_token: decrypt(account.refresh_token_enc), access_token: decrypt(account.access_token_enc) });
   const youtube = google.youtube({ version: "v3", auth: oauth });
   const mp4 = await getObject(payload.objectKey);
   const dir = await mkdtemp(path.join(tmpdir(), "niche-upload-"));
@@ -44,10 +43,7 @@ export async function publishJob(payload: PublishPayload) {
       part: ["snippet", "status"],
       requestBody: {
         snippet: { title: payload.title.slice(0, 100), description: payload.description.slice(0, 5000), tags: (payload.tags || []).slice(0, 500) },
-        status: {
-          privacyStatus: payload.publishAt ? "private" : payload.privacyStatus,
-          ...(payload.publishAt ? { publishAt: new Date(payload.publishAt).toISOString() } : {})
-        }
+        status: { privacyStatus: payload.publishAt ? "private" : payload.privacyStatus, ...(payload.publishAt ? { publishAt: new Date(payload.publishAt).toISOString() } : {}) }
       },
       media: { body: createReadStream(filePath) }
     });
