@@ -86,7 +86,7 @@ export default function StudioPage() {
 
   async function startRender() {
     setError(""); setMessage("");
-    if (!zipFile && !code.trim()) { setError("Pilih file source, folder project, ZIP, atau paste kode."); return; }
+    if (!zipFile && !code.trim()) { setError("Upload project ZIP atau paste source mandiri."); return; }
     const width = format === "16:9" ? 1920 : 1080;
     const height = format === "16:9" ? 1080 : 1920;
     const selectedComposition = compositionId.trim();
@@ -122,7 +122,7 @@ export default function StudioPage() {
   async function analyzeProject() {
     setError(""); setMessage(""); setInspect(null);
     if (!zipFile && !projectFiles.length && !code.trim()) {
-      setError("Pilih file source, folder project, ZIP, atau paste kode terlebih dahulu.");
+      setError("Upload project ZIP atau paste source mandiri terlebih dahulu.");
       return;
     }
     setInspectBusy(true);
