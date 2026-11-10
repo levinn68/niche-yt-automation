@@ -11,7 +11,7 @@ if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
 }
 
 export const s3 = new S3Client({
-  region: "auto",
+  region: process.env.S3_REGION || "ap-southeast-1",
   endpoint,
   forcePathStyle: true,
   credentials: { accessKeyId, secretAccessKey }
@@ -23,7 +23,7 @@ export async function putObject(key: string, body: Buffer, contentType: string) 
 
 export async function getObject(key: string): Promise<Buffer> {
   const result = await s3.send(new GetObjectCommand({ Bucket: bucket!, Key: key }));
-  if (!result.Body) throw new Error("Object not found in R2");
+  if (!result.Body) throw new Error("Object not found in Supabase Storage");
   const stream = result.Body as Readable;
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
