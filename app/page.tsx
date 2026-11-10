@@ -128,7 +128,7 @@ export default function StudioPage() {
     setInspectBusy(true);
     try {
       const form = new FormData();
-      if (zipFile) form.append("file", zipFile);
+      if (projectFile) form.append("file", projectFile);
       else form.append("code", code);
       const response = await fetch("/api/projects/inspect", { method: "POST", body: form });
       const result = await response.json();
