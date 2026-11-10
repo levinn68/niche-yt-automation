@@ -26,15 +26,20 @@ export async function POST(request: NextRequest) {
     if (!compositionId || ![width, height, fps, durationInFrames].every((n) => Number.isFinite(n) && n > 0)) return NextResponse.json({ error: "Composition ID, dimensions, FPS, and duration are required." }, { status: 400 });
 
     let archive: Uint8Array;
-    if (zip instanceof File) {
-      if (!zip.name.toLowerCase().endsWith(".zip")) return NextResponse.json({ error: "Format upload hanya .zip." }, { status: 415 });
+    if (zip instanceof File && zip.name.toLowerCase().endsWith(".zip")) {
       if (zip.size > 100 * 1024 * 1024) return NextResponse.json({ error: "ZIP maksimum 100 MB." }, { status: 413 });
       archive = new Uint8Array(await zip.arrayBuffer());
-    } else if (typeof code === "string" && code.trim()) {
-      if (code.length > 2_000_000) return NextResponse.json({ error: "Source maksimum 2 MB." }, { status: 413 });
-      archive = zipSync({ [entryPoint]: strToU8(code), "package.json": strToU8(JSON.stringify({ name: "user-remotion-project", private: true, dependencies: { remotion: "^4.0.279", react: "^18.3.1", "react-dom": "^18.3.1" } })) });
     } else {
-      return NextResponse.json({ error: "Upload project ZIP atau paste source mandiri." }, { status: 400 });
+      let sourceCode = typeof code === "string" ? code : "";
+      if (zip instanceof File && zip.name.toLowerCase().endsWith(".tsx")) {
+        if (zip.size > 2_000_000) return NextResponse.json({ error: "File TSX maksimum 2 MB." }, { status: 413 });
+        sourceCode = await zip.text();
+      } else if (zip instanceof File) {
+        return NextResponse.json({ error: "Format upload hanya .tsx atau .zip." }, { status: 415 });
+      }
+      if (!sourceCode.trim()) return NextResponse.json({ error: "Upload project ZIP, file TSX, atau paste source mandiri." }, { status: 400 });
+      if (sourceCode.length > 2_000_000) return NextResponse.json({ error: "Source maksimum 2 MB." }, { status: 413 });
+      archive = zipSync({ [entryPoint]: strToU8(sourceCode), "package.json": strToU8(JSON.stringify({ name: "user-remotion-project", private: true, dependencies: { remotion: "^4.0.279", react: "^18.3.1", "react-dom": "^18.3.1" } })) });
     }
 
     let inputProps: Record<string, unknown>;
