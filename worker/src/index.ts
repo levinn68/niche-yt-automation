@@ -4,6 +4,7 @@ import { Worker } from "bullmq";
 import { connection, renderQueue, publishQueue, type RenderPayload, type PublishPayload } from "./queue.js";
 import { renderJob } from "./render.js";
 import { publishJob } from "./publish.js";
+import { getObject } from "./storage.js";
 
 const app = express();
 app.use(express.json({ limit: "140mb" }));
@@ -62,6 +63,25 @@ app.post("/jobs/publish", authorized, async (req, res) => {
     res.status(202).json({ jobId: job.id, state: body.publishAt ? "scheduled" : "queued" });
   } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : "Queue error" }); }
 });
+
+app.get("/files", authorized, async (req, res) => {
+  try {
+    const key = typeof req.query.key === "string" ? req.query.key : "";
+    if (!key || key.startsWith("/") || key.split("/").some((part) => part === "..")) {
+      return res.status(400).json({ error: "Invalid object key" });
+    }
+    const file = await getObject(key);
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Length", String(file.byteLength));
+    res.setHeader("Content-Disposition", 'attachment; filename="rendered-video.mp4"');
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.send(file);
+  } catch (error) {
+    console.error("File download failed", error);
+    return res.status(404).json({ error: "Rendered video not found" });
+  }
+});
+
 app.get("/jobs/:id", authorized, async (req, res) => {
   const job = await renderQueue.getJob(String(req.params.id)) || await publishQueue.getJob(String(req.params.id));
   if (!job) return res.status(404).json({ error: "Job not found" });
