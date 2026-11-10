@@ -49,17 +49,32 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
     const entryExists = names.some((name) => path.resolve(projectDir, name) === entry);
     if (!entryExists) throw new Error("entryPoint not found in ZIP");
 
-    await progress(5);
+    let lastProgress = 0;
+    const reportProgress = async (value: number) => {
+      const next = Math.max(lastProgress, Math.min(100, Math.round(value)));
+      if (next <= lastProgress) return;
+      lastProgress = next;
+      await progress(next);
+    };
+
+    await reportProgress(5);
     // User-supplied Remotion code executes in this worker. Deploy this worker as an
     // isolated container with no privileged mounts and restricted network egress.
-    const serveUrl = await bundle({ entryPoint: entry, onProgress: (p) => void progress(Math.min(25, 5 + Math.round(p * 0.2))) });
-    await progress(30);
+    const serveUrl = await bundle({
+      entryPoint: entry,
+      onProgress: (p) => { void reportProgress(Math.min(25, 5 + Math.round(p * 0.2))); }
+    });
+    await reportProgress(28);
+    // Root component loading may wait for fonts, images, audio metadata or custom
+    // delayRender() calls. Give slow but valid assets more time than Remotion's 30s default.
     const composition = await selectComposition({
       serveUrl,
       id: payload.compositionId,
       inputProps: payload.inputProps ?? {},
+      timeoutInMilliseconds: 120000,
       chromiumOptions: { enableMultiProcessOnLinux: true }
     });
+    await reportProgress(35);
     if (composition.width !== payload.width || composition.height !== payload.height) {
       throw new Error("Composition dimensions do not match requested output dimensions");
     }
@@ -75,11 +90,12 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       inputProps: payload.inputProps ?? {},
       chromiumOptions: { enableMultiProcessOnLinux: true },
       concurrency: 2,
-      onProgress: ({ progress: p }) => void progress(30 + Math.round(p * 65))
+      timeoutInMilliseconds: 120000,
+      onProgress: ({ progress: p }) => { void reportProgress(35 + Math.round(p * 60)); }
     });
     const mp4 = await readFile(outputPath);
     await putObject(payload.outputKey, mp4, "video/mp4");
-    await progress(100);
+    await reportProgress(100);
     return { objectKey: payload.outputKey, bytes: mp4.byteLength };
   } finally {
     await rm(work, { recursive: true, force: true });
