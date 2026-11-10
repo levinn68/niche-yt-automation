@@ -227,3 +227,82 @@ button:focus-visible,[role="switch"]:focus-visible{outline:2px solid #9cc7ff;out
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .sidebar{background:rgba(17,23,35,.97)}
 }
+
+
+/* Code to Video Studio: high-contrast Liquid Glass hierarchy */
+:root{
+  --text:#f4f7fb;
+  --muted:#aeb8c8;
+  --accent:#76b7ff;
+  --accent-strong:#a6d4ff;
+  --glass-fill:rgba(17,25,37,.76);
+  --glass-strong:rgba(23,34,49,.9);
+  --glass-edge:rgba(211,228,247,.16);
+  --radius-card:24px;
+}
+body{
+  background:
+    radial-gradient(ellipse at 4% 0%,rgba(57,123,174,.17),transparent 34%),
+    radial-gradient(ellipse at 95% 12%,rgba(53,91,116,.13),transparent 30%),
+    linear-gradient(145deg,#070b11 0%,#101a26 52%,#080d14 100%);
+  color:#f4f7fb;
+}
+.sidebar,.topbar{
+  background:rgba(8,14,22,.86);
+  border-color:rgba(210,229,248,.12);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  backdrop-filter:blur(22px) saturate(160%);
+}
+.panel,.stat-card{
+  background:linear-gradient(145deg,rgba(27,39,54,.88),rgba(15,24,36,.88));
+  border:1px solid rgba(208,228,247,.16);
+  box-shadow:inset 0 1px rgba(255,255,255,.11),0 18px 42px rgba(0,0,0,.26);
+  -webkit-backdrop-filter:blur(18px) saturate(155%);
+  backdrop-filter:blur(18px) saturate(155%);
+}
+.panel{border-radius:24px}
+.stat-card{border-radius:20px}
+.panel-title b,.section-heading h3,.welcome-row h2{color:#f7f9fc}
+.panel-title small,.welcome-row p,.section-heading p,.stat-card small{color:#b4c0d0}
+.eyebrow,.stat-card span,.nav-label{color:#9bb0c7}
+.nav-item{color:#bac7d7}
+.nav-item.active{background:rgba(104,174,235,.18);color:#f7fbff;border-color:rgba(143,201,247,.23)}
+.code-input,.script-input,.metadata-fields input,.metadata-fields textarea,.wide-input,
+.inline-controls select,.field-row select,.field-row input,.voice-panel select{
+  background:rgba(4,10,17,.84);
+  color:#f4f8fc;
+  border:1px solid rgba(184,211,236,.22);
+}
+.code-input::placeholder,.script-input::placeholder,.wide-input::placeholder,
+.metadata-fields input::placeholder,.metadata-fields textarea::placeholder{color:#7f91a5}
+.dropzone,.audio-upload{
+  background:rgba(7,15,24,.66);
+  border:1px dashed rgba(154,193,225,.36);
+  border-radius:19px;
+}
+.primary-btn{
+  background:linear-gradient(115deg,#9bd0ff,#7eb8ee);
+  color:#071321;
+  border:1px solid rgba(220,241,255,.55);
+  box-shadow:inset 0 1px rgba(255,255,255,.65),0 8px 22px rgba(74,143,201,.2);
+  font-weight:750;
+}
+.secondary-btn,.account-btn{
+  background:rgba(171,204,230,.09);
+  border:1px solid rgba(190,218,241,.2);
+  color:#e8f3fc;
+}
+.detected{color:#a9e6ce}
+.notice{color:#d2dfeb;background:rgba(183,211,235,.07);border:1px solid rgba(190,218,241,.12)}
+.alert{font-size:12px}
+button,input,select,textarea{font:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid #9bd0ff;outline-offset:3px;
+}
+@media(max-width:760px){
+  .sidebar{background:rgba(12,20,30,.94);border:1px solid rgba(211,228,247,.2)}
+  .panel,.stat-card{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .sidebar,.topbar,.panel,.stat-card{background:rgba(15,24,36,.98)}
+}
