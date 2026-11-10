@@ -30,7 +30,7 @@ export default function StudioPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [code, setCode] = useState("");
-  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [projectFile, setProjectFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState("");
   const [compositionId, setCompositionId] = useState("Main");
@@ -86,13 +86,13 @@ export default function StudioPage() {
 
   async function startRender() {
     setError(""); setMessage("");
-    if (!zipFile && !code.trim()) { setError("Upload project ZIP atau paste source mandiri."); return; }
+    if (!projectFile && !code.trim()) { setError("Upload file TSX/ZIP atau paste source mandiri."); return; }
     const width = format === "16:9" ? 1920 : 1080;
     const height = format === "16:9" ? 1080 : 1920;
     const selectedComposition = compositionId.trim();
     if (!selectedComposition) { setError("Isi Composition ID project Remotion."); return; }
     const form = new FormData();
-    if (zipFile) form.append("file", zipFile); else form.append("code", code);
+    if (projectFile?.name.toLowerCase().endsWith(".zip")) form.append("file", projectFile); else if (projectFile) form.append("file", projectFile); else form.append("code", code);
     form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
     form.append("compositionId", selectedComposition);
     form.append("width", String(width)); form.append("height", String(height));
@@ -122,7 +122,7 @@ export default function StudioPage() {
   async function analyzeProject() {
     setError(""); setMessage(""); setInspect(null);
     if (!zipFile && !projectFiles.length && !code.trim()) {
-      setError("Upload project ZIP atau paste source mandiri terlebih dahulu.");
+      setError("Upload file TSX/ZIP atau paste source mandiri terlebih dahulu.");
       return;
     }
     setInspectBusy(true);
@@ -227,10 +227,10 @@ export default function StudioPage() {
             <section className="page-intro"><div className="eyebrow">PRODUCTION / RENDER</div><h2>Render workspace</h2><p>Masukkan source Remotion yang sudah jadi atau upload ZIP project. Analyze dulu, lalu render ke MP4.</p></section>
             <div className="workspace-grid single-render">
               <div className="panel project-panel">
-                <div className="panel-title"><div className="icon-box purple"><FileVideo2 size={18}/></div><div><b>Remotion project</b><small>Paste source code atau upload project ZIP</small></div><span className="optional">SOURCE</span></div>
-                <div className="dropzone"><FolderUp size={27}/><b>{zipFile ? zipFile.name : "Upload Remotion project"}</b><span>ZIP project · maximum 100 MB</span><label className="secondary-btn file-button">Choose ZIP<input type="file" accept=".zip,application/zip" onChange={e => {setZipFile(e.target.files?.[0] ?? null);setInspect(null);}}/></label></div>
+                <div className="panel-title"><div className="icon-box purple"><FileVideo2 size={18}/></div><div><b>Remotion project</b><small>Upload satu file TSX atau project ZIP</small></div><span className="optional">SOURCE</span></div>
+                <div className="dropzone"><FolderUp size={27}/><b>{projectFile ? projectFile.name : "Upload Remotion source"}</b><span>Single .tsx source (2 MB) atau full project .zip (100 MB)</span><label className="secondary-btn file-button">Choose .TSX / .ZIP<input type="file" accept=".tsx,.zip,application/zip,text/typescript" onChange={e => {setProjectFile(e.target.files?.[0] ?? null);setCode("");setInspect(null);}}/></label></div>
                 <div className="or-divider"><span>OR PASTE CODE</span></div>
-                <textarea className="code-input" value={code} onChange={e => {setCode(e.target.value); setZipFile(null);setInspect(null);}} placeholder={"// Paste Remotion TSX / JSX code here\nimport { Composition } from 'remotion';"} />
+                <textarea className="code-input" value={code} onChange={e => {setCode(e.target.value); setProjectFile(null);setInspect(null);}} placeholder={"// Paste Remotion TSX / JSX code here\nimport { Composition } from 'remotion';"} />
                 <div className="inline-controls"><label>Composition ID</label><input value={compositionId} onChange={e => setCompositionId(e.target.value)} placeholder="Main"/></div>
                 <div className="inline-controls"><label>Output format</label><select value={format} onChange={e => setFormat(e.target.value as Format)}><option value="auto">Auto detect from composition</option><option value="9:16">Force 9:16 Portrait</option><option value="16:9">Force 16:9 Landscape</option></select></div>
                 <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
