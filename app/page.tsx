@@ -150,7 +150,7 @@ export default function StudioPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Worker menolak render.");
       setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);
-      window.localStorage.setItem("creator-studio-active-render", data.jobId);\n      window.localStorage.setItem("creator-studio-active-render", data.jobId);
+      window.localStorage.setItem("creator-studio-active-render", data.jobId);
       setMessage("Render masuk antrean. Job ID: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
     finally { setRenderBusy(false); renderSubmitLock.current = false; }
