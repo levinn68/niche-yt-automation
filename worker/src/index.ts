@@ -14,7 +14,7 @@ if (!token || token.length < 32) throw new Error("WORKER_API_TOKEN must be confi
 const requiredToken: string = token;
 
 function authorized(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const supplied = (req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
+  const supplied = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const a = Buffer.from(supplied); const b = Buffer.from(requiredToken);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return res.status(401).json({ error: "Unauthorized" });
   next();
