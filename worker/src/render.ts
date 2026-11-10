@@ -71,8 +71,11 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       serveUrl,
       id: payload.compositionId,
       inputProps: payload.inputProps ?? {},
-      timeoutInMilliseconds: 120000,
+      timeoutInMilliseconds: 60000,
       chromiumOptions: { enableMultiProcessOnLinux: true }
+    }).catch((error: unknown) => {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Composition loading timed out or failed after 60 seconds. Check delayRender()/continueRender(), fonts, images, and audio metadata. Details: ${detail}`);
     });
     await reportProgress(35);
     if (composition.width !== payload.width || composition.height !== payload.height) {
