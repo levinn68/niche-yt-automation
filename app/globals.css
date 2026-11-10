@@ -81,3 +81,149 @@ footer{display:flex;justify-content:space-between;color:#8494ad;font-size:9px;le
 @media(max-width:700px){.sidebar{width:62px;padding:18px 8px;border-radius:0 20px 20px 0}.brand{padding:0 5px 25px}.brand>div:last-child,.workspace,.nav-label,.nav-item:not(.active),.nav-item.active{font-size:0}.nav-item{justify-content:center;padding:12px 0}.sidebar-bottom{font-size:0}.sidebar-bottom span{display:none}.topbar{padding:0 15px}.account-btn{font-size:0}.status-pill{font-size:8px}.content{padding:20px 14px}.welcome-row{align-items:start;gap:10px;flex-direction:column}.welcome-row h2{font-size:22px}.stats-grid{gap:8px}.stat-card{padding:12px}.metadata-panel{grid-template-columns:1fr}.top-actions{gap:6px}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.sidebar,.topbar,.panel,.stat-card,.workspace,.account-btn,.secondary-btn,.notice,.dropzone,.audio-upload{background:rgba(17,24,38,.96)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important;scroll-behavior:auto!important}}
+
+
+/* Liquid Glass refinement: calmer hierarchy, clearer contrast, responsive navigation */
+:root{
+  --glass-fill:rgba(20,27,40,.58);
+  --glass-strong:rgba(27,36,52,.76);
+  --glass-edge:rgba(226,237,255,.14);
+  --glass-blur:28px;
+  --muted:#aebbd0;
+  --text:#f5f7fc;
+  --radius-card:26px;
+}
+html{background:#080c14}
+body{
+  background:
+    radial-gradient(ellipse at 8% -8%,rgba(74,126,205,.17),transparent 34%),
+    radial-gradient(ellipse at 94% 8%,rgba(111,91,176,.12),transparent 30%),
+    linear-gradient(155deg,#090d16 0%,#0d1421 52%,#090e18 100%);
+  background-attachment:fixed;
+}
+.sidebar{
+  width:252px;padding:26px 15px;background:rgba(10,15,24,.78);
+  border-right:1px solid rgba(226,237,255,.09);border-radius:0 26px 26px 0;
+  box-shadow:8px 0 34px rgba(0,0,0,.16);
+}
+.brand{padding:0 10px 26px}
+.brand-mark{border-radius:14px;box-shadow:inset 0 1px 1px rgba(255,255,255,.55),0 5px 18px rgba(86,140,255,.16)}
+.workspace{background:rgba(255,255,255,.045);border-color:rgba(226,237,255,.10);border-radius:18px;margin-bottom:25px}
+.nav-item{min-height:44px;padding:11px 13px;border-radius:13px;font-size:12px}
+.nav-item.active{background:rgba(119,158,220,.15);border-color:rgba(166,197,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.08)}
+.topbar{
+  height:76px;padding:0 clamp(18px,3vw,38px);background:rgba(9,14,23,.72);
+  border-bottom:1px solid rgba(226,237,255,.08);border-radius:0;
+  box-shadow:0 8px 28px rgba(0,0,0,.12);
+}
+.content{max-width:1420px;padding:30px clamp(18px,3vw,38px) 42px}
+.welcome-row{margin-bottom:27px}
+.welcome-row h2{font-size:clamp(23px,2.2vw,30px);letter-spacing:-.7px}
+.welcome-row p,.section-heading p{font-size:12px;line-height:1.65;color:#aebbd0}
+.phase-tag{background:rgba(255,255,255,.045);border-color:rgba(226,237,255,.12)}
+.stats-grid{gap:13px;margin-bottom:32px}
+.stat-card,.panel{
+  background:rgba(20,27,40,.62);border:1px solid rgba(226,237,255,.13);
+  border-radius:25px;box-shadow:inset 0 1px rgba(255,255,255,.10),0 16px 38px rgba(0,0,0,.18);
+}
+.stat-card{padding:19px 20px}
+.stat-card:hover{transform:translateY(-2px);background:rgba(25,34,50,.72)}
+.stat-card span{font-size:9px;letter-spacing:1.05px;color:#b3c0d3}
+.stat-card b{font-size:27px;letter-spacing:-.6px}
+.section-heading{margin:30px 0 14px}
+.section-heading h3{font-size:16px;letter-spacing:-.2px}
+.workspace-grid{grid-template-columns:minmax(0,1.05fr) minmax(330px,.95fr);gap:17px}
+.panel{padding:22px}
+.panel-title{margin-bottom:19px}
+.panel-title b{font-size:12px}.panel-title small{font-size:10px;line-height:1.5}
+.icon-box{width:38px;height:38px;border-radius:14px}
+.code-input,.script-input,.metadata-fields textarea,.metadata-fields input,.wide-input,
+.inline-controls select,.field-row select,.field-row input,.voice-panel select{
+  background:rgba(5,10,18,.62);border-color:rgba(226,237,255,.14);
+  color:#f1f5fb;border-radius:13px;font-size:11px;
+}
+.code-input:focus,.script-input:focus,.metadata-fields input:focus,.metadata-fields textarea:focus,.wide-input:focus,
+.inline-controls select:focus,.field-row select:focus,.field-row input:focus{
+  outline:2px solid rgba(126,173,244,.30);outline-offset:1px;
+}
+.dropzone,.audio-upload{background:rgba(7,12,21,.34);border-color:rgba(205,222,248,.19);min-height:145px}
+.primary-btn{
+  border-radius:14px;background:linear-gradient(115deg,#9cc7ff,#a8a0f5);
+  border-color:rgba(224,238,255,.32);box-shadow:inset 0 1px rgba(255,255,255,.62),0 7px 20px rgba(91,137,213,.15);
+  min-height:43px;font-size:11px;
+}
+.secondary-btn,.account-btn{min-height:40px;border-radius:13px;background:rgba(255,255,255,.055);border-color:rgba(226,237,255,.13)}
+.notice{background:rgba(255,255,255,.045);border-color:rgba(226,237,255,.10);line-height:1.55}
+footer{gap:12px;line-height:1.6;flex-wrap:wrap}
+button:focus-visible,[role="switch"]:focus-visible{outline:2px solid #9cc7ff;outline-offset:3px}
+@media(max-width:1050px){
+  .sidebar{width:220px}
+  .workspace-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .shell{display:block;padding-bottom:78px}
+  .sidebar{
+    position:fixed;z-index:20;left:12px;right:12px;top:auto;bottom:max(10px,env(safe-area-inset-bottom));
+    width:auto;height:64px;padding:6px 8px;border:1px solid rgba(231,240,255,.17);
+    border-radius:23px;display:flex;flex-direction:row;align-items:center;justify-content:space-around;
+    background:rgba(17,23,35,.82);-webkit-backdrop-filter:blur(30px) saturate(190%);
+    backdrop-filter:blur(30px) saturate(190%);box-shadow:0 12px 36px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.14);
+  }
+  .brand,.workspace,.nav-label,.sidebar-bottom{display:none}
+  .sidebar .nav-item{
+    display:flex;flex:1;min-width:0;min-height:48px;height:48px;margin:0;padding:6px 3px;
+    flex-direction:column;justify-content:center;align-items:center;gap:3px;
+    border:1px solid transparent;border-radius:15px;font-size:9px;line-height:1.1;
+    color:#aebbd0;white-space:nowrap;
+  }
+  .sidebar .nav-item svg{width:18px;height:18px}
+  .sidebar .nav-item.active{font-size:9px;color:#f3f7ff;background:rgba(133,171,231,.18);border-color:rgba(177,207,255,.13)}
+  .main{width:100%;min-width:0}
+  .topbar{height:68px;padding:0 16px}
+  .topbar h1{font-size:17px}
+  .top-actions{gap:8px}
+  .account-btn{width:38px;min-width:38px;height:38px;padding:0;justify-content:center;font-size:0;gap:0}
+  .account-btn svg{width:17px;height:17px}
+  .status-pill{display:none}
+  .user-avatar{width:34px;height:34px}
+  .content{padding:22px 14px 28px}
+  .welcome-row{gap:12px;margin-bottom:20px}
+  .welcome-row h2{font-size:24px;line-height:1.18}
+  .welcome-row p{max-width:38ch;font-size:11px}
+  .phase-tag{font-size:8px;padding:8px 10px}
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:25px}
+  .stat-card{padding:14px 13px;border-radius:19px;min-width:0}
+  .stat-card span{font-size:8px;letter-spacing:.7px}
+  .stat-card b{font-size:23px;margin:7px 0 3px}
+  .stat-card small{font-size:9px;overflow-wrap:anywhere}
+  .section-heading{margin:25px 0 12px;align-items:start}
+  .section-heading h3{font-size:15px}
+  .section-heading p{font-size:10px}
+  .workspace-grid,.settings-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .panel{padding:17px;border-radius:21px}
+  .panel-title{gap:9px;margin-bottom:15px}
+  .panel-title b{font-size:11px}
+  .panel-title small{font-size:9px}
+  .icon-box{width:34px;height:34px;border-radius:12px}
+  .dropzone,.audio-upload{min-height:130px}
+  .code-input{height:145px;font-size:11px}
+  .script-input{height:132px}
+  .inline-controls,.field-row{align-items:flex-start;flex-direction:column;gap:7px}
+  .inline-controls select,.field-row select,.field-row input{width:100%;min-width:0;min-height:42px}
+  .metadata-panel{grid-template-columns:minmax(0,1fr);gap:15px}
+  .metadata-fields input,.metadata-fields textarea{font-size:11px}
+  .thumbnail-box{width:100%}
+  .primary-btn,.secondary-btn{min-height:43px}
+  footer{padding:22px 2px 10px;font-size:8px}
+}
+@media(max-width:380px){
+  .content{padding-left:11px;padding-right:11px}
+  .sidebar{left:8px;right:8px}
+  .sidebar .nav-item{font-size:8px}
+  .welcome-row h2{font-size:21px}
+  .panel{padding:14px}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .sidebar{background:rgba(17,23,35,.97)}
+}
