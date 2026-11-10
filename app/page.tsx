@@ -31,6 +31,7 @@ export default function StudioPage() {
   const [description, setDescription] = useState("");
   const [code, setCode] = useState("");
   const [zipFile, setZipFile] = useState<File | null>(null);
+  const [projectFiles, setProjectFiles] = useState<File[]>([]);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState("");
   const [compositionId, setCompositionId] = useState("Main");
@@ -86,13 +87,13 @@ export default function StudioPage() {
 
   async function startRender() {
     setError(""); setMessage("");
-    if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
+    if (!zipFile && !projectFiles.length && !code.trim()) { setError("Pilih file source, folder project, ZIP, atau paste kode."); return; }
     const width = format === "16:9" ? 1920 : 1080;
     const height = format === "16:9" ? 1080 : 1920;
     const selectedComposition = compositionId.trim();
     if (!selectedComposition) { setError("Isi Composition ID project Remotion."); return; }
     const form = new FormData();
-    if (zipFile) form.append("file", zipFile); else form.append("code", code);
+    if (zipFile) form.append("file", zipFile); else if (projectFiles.length) projectFiles.forEach(file => form.append("projectFiles", file, file.webkitRelativePath || file.name)); else form.append("code", code);
     form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
     form.append("compositionId", selectedComposition);
     form.append("width", String(width)); form.append("height", String(height));
@@ -121,14 +122,15 @@ export default function StudioPage() {
 
   async function analyzeProject() {
     setError(""); setMessage(""); setInspect(null);
-    if (!zipFile && !code.trim()) {
-      setError("Upload ZIP project atau paste source code terlebih dahulu.");
+    if (!zipFile && !projectFiles.length && !code.trim()) {
+      setError("Pilih file source, folder project, ZIP, atau paste kode terlebih dahulu.");
       return;
     }
     setInspectBusy(true);
     try {
       const form = new FormData();
       if (zipFile) form.append("file", zipFile);
+      else if (projectFiles.length) projectFiles.forEach(file => form.append("projectFiles", file, file.webkitRelativePath || file.name));
       else form.append("code", code);
       const response = await fetch("/api/projects/inspect", { method: "POST", body: form });
       const result = await response.json();
@@ -228,9 +230,9 @@ export default function StudioPage() {
             <div className="workspace-grid single-render">
               <div className="panel project-panel">
                 <div className="panel-title"><div className="icon-box purple"><FileVideo2 size={18}/></div><div><b>Remotion project</b><small>Paste source code atau upload project ZIP</small></div><span className="optional">SOURCE</span></div>
-                <div className="dropzone"><FolderUp size={27}/><b>{zipFile ? zipFile.name : "Upload project ZIP"}</b><span>ZIP project · maximum 100 MB</span><label className="secondary-btn file-button">Choose ZIP<input type="file" accept=".zip,application/zip" onChange={e => {setZipFile(e.target.files?.[0] ?? null);setInspect(null);}}/></label></div>
+                <div className="upload-options"><div className="dropzone"><FolderUp size={27}/><b>{zipFile?.name || (projectFiles.length ? projectFiles.length + " project files selected" : "Choose Remotion project")}</b><span>Folder project, ZIP, atau source file · max 100 MB</span><div className="upload-buttons"><label className="secondary-btn file-button">Choose ZIP<input type="file" accept=".zip,application/zip" onChange={e => {setZipFile(e.target.files?.[0] ?? null);setProjectFiles([]);setInspect(null);}}/></label><label className="secondary-btn file-button">Choose folder<input type="file" multiple {...({ webkitdirectory: "" } as any)} onChange={e => {setProjectFiles(Array.from(e.target.files || []));setZipFile(null);setInspect(null);}}/></label><label className="secondary-btn file-button">Choose source<input type="file" accept=".tsx,.ts,.jsx,.js" onChange={e => {setProjectFiles(Array.from(e.target.files || []));setZipFile(null);setInspect(null);}}/></label></div></div><div className="format-help"><b>Supported formats</b><span><code>.tsx</code> · <code>.ts</code> · <code>.jsx</code> · <code>.js</code> · <code>.zip</code></span><small>Jika project memakai banyak komponen, import lokal, gambar, atau audio, pilih seluruh folder project. File tunggal hanya cocok untuk source mandiri.</small></div></div>
                 <div className="or-divider"><span>OR PASTE CODE</span></div>
-                <textarea className="code-input" value={code} onChange={e => {setCode(e.target.value); setZipFile(null);setInspect(null);}} placeholder={"// Paste Remotion TSX / JSX code here\nimport { Composition } from 'remotion';"} />
+                <textarea className="code-input" value={code} onChange={e => {setCode(e.target.value); setZipFile(null); setProjectFiles([]);setInspect(null);}} placeholder={"// Paste Remotion TSX / JSX code here\nimport { Composition } from 'remotion';"} />
                 <div className="inline-controls"><label>Composition ID</label><input value={compositionId} onChange={e => setCompositionId(e.target.value)} placeholder="Main"/></div>
                 <div className="inline-controls"><label>Output format</label><select value={format} onChange={e => setFormat(e.target.value as Format)}><option value="auto">Auto detect from composition</option><option value="9:16">Force 9:16 Portrait</option><option value="16:9">Force 16:9 Landscape</option></select></div>
                 <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
