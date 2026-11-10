@@ -435,3 +435,10 @@ button:disabled{filter:saturate(.6)}
   .sidebar,.topbar{background:#0b131d}
   .panel,.stat-card,.welcome-row{background:#142231}
 }
+
+.render-status{display:flex;flex-direction:column;gap:7px}
+.render-status b{color:#eaf5ff;font-size:10px}
+.render-status span{color:#b8c7d6;font-size:9px}
+.progress-track{height:5px;border-radius:99px;background:rgba(190,216,237,.14);overflow:hidden}
+.progress-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#75b9ec,#b9e1ff);transition:width .3s ease}
+@media(prefers-reduced-motion:reduce){.progress-track i{transition:none}}
