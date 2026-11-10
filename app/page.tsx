@@ -64,7 +64,16 @@ export default function StudioPage() {
       try {
         const response = await fetch("/api/render/" + encodeURIComponent(renderJobId), { cache: "no-store" });
         const data = await response.json();
-        if (!active || !response.ok) return;
+        if (!active) return;
+        if (!response.ok) {
+          if (response.status === 404) {
+            setRenderState("missing");
+            setError("Job render tidak ditemukan di antrean worker. Mulai render baru untuk membuat job baru.");
+            window.localStorage.removeItem("creator-studio-active-render");
+            active = false;
+          }
+          return;
+        }
         const incoming = typeof data.progress === "number" ? data.progress : Number(data.progress?.progress || 0);
         setRenderState(data.state || "unknown");
         // BullMQ progress updates can arrive out of order. Never let the UI move backwards.
@@ -120,7 +129,7 @@ export default function StudioPage() {
   }
 
   async function startRender() {
-    if (renderSubmitLock.current || renderBusy || (renderJobId && ["queued", "waiting", "active", "delayed", "processing"].includes(renderState))) return;
+    if (renderSubmitLock.current || renderBusy || (renderJobId && !["completed", "failed", "missing"].includes(renderState))) return;
     renderSubmitLock.current = true;
     setError(""); setMessage("");
     if (!projectFile && !code.trim()) { setError("Upload file TSX/TXT/ZIP atau paste source mandiri."); renderSubmitLock.current = false; return; }
