@@ -27,8 +27,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ source: "code", filename: "pasted-project.tsx", entryFile: "src/index.tsx", ...inspectSource(code), note: "Source mandiri diperiksa tanpa dieksekusi." });
     }
 
-    if (!(file instanceof File)) return NextResponse.json({ error: "Upload project dalam format ZIP." }, { status: 400 });
-    if (!file.name.toLowerCase().endsWith(".zip")) return NextResponse.json({ error: "Format upload hanya .zip." }, { status: 415 });
+    if (!(file instanceof File)) return NextResponse.json({ error: "Upload file .tsx atau project .zip." }, { status: 400 });
+    if (file.name.toLowerCase().endsWith(".tsx")) {
+      if (file.size > 2_000_000) return NextResponse.json({ error: "File TSX maksimum 2 MB." }, { status: 413 });
+      const source = await file.text();
+      return NextResponse.json({ source: "tsx", filename: file.name, entryFile: "src/index.tsx", ...inspectSource(source), note: "File TSX mandiri diperiksa tanpa dieksekusi. Import asset atau module eksternal tetap memerlukan project ZIP." });
+    }
+    if (!file.name.toLowerCase().endsWith(".zip")) return NextResponse.json({ error: "Format upload hanya .tsx atau .zip." }, { status: 415 });
     if (file.size > MAX_BYTES) return NextResponse.json({ error: "Ukuran ZIP maksimum 100 MB." }, { status: 413 });
 
     const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), { filter: (entry) => !entry.name.startsWith("__MACOSX/") });
