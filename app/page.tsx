@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import YouTubeChannelPicker from "./components/youtube-channel-picker";
 import {
   AudioLines, Clapperboard, Film, FolderUp, LayoutDashboard, Mic2,
@@ -44,6 +44,7 @@ export default function StudioPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [renderBusy, setRenderBusy] = useState(false);
+  const renderSubmitLock = useRef(false);
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
   const [renderProgress, setRenderProgress] = useState(0);
@@ -55,7 +56,7 @@ export default function StudioPage() {
   const [publishBusy, setPublishBusy] = useState(false);
 
   useEffect(() => { fetch("/api/auth/studio").then(r => r.json()).then(d => setStudioAuthenticated(Boolean(d.authenticated))).catch(() => setStudioAuthenticated(false)).finally(() => setAuthLoading(false)); }, []);
-  useEffect(() => { if (!studioAuthenticated) return; fetch("/api/youtube/channels").then(r => r.json()).then(d => { const list = d.channels || []; setChannelOptions(list); setPublishChannel(d.selectedChannelId || list.find((x: {selected?:boolean}) => x.selected)?.id || ""); }).catch(() => {}); }, [studioAuthenticated]);
+  useEffect(() => { if (!studioAuthenticated) return; const savedJob = window.localStorage.getItem("creator-studio-active-render"); if (savedJob) setRenderJobId(savedJob); fetch("/api/youtube/channels").then(r => r.json()).then(d => { const list = d.channels || []; setChannelOptions(list); setPublishChannel(d.selectedChannelId || list.find((x: {selected?:boolean}) => x.selected)?.id || ""); }).catch(() => {}); }, [studioAuthenticated]);
   useEffect(() => {
     if (!renderJobId || !studioAuthenticated) return;
     let active = true;
@@ -112,11 +113,11 @@ export default function StudioPage() {
 
   async function startRender() {
     setError(""); setMessage("");
-    if (!projectFile && !code.trim()) { setError("Upload file TSX/TXT/ZIP atau paste source mandiri."); return; }
+    if (!projectFile && !code.trim()) { setError("Upload file TSX/TXT/ZIP atau paste source mandiri."); renderSubmitLock.current = false; return; }
     const width = format === "16:9" ? 1920 : 1080;
     const height = format === "16:9" ? 1080 : 1920;
     const selectedComposition = compositionId.trim();
-    if (!selectedComposition) { setError("Isi Composition ID project Remotion."); return; }
+    if (!selectedComposition) { setError("Isi Composition ID project Remotion."); renderSubmitLock.current = false; return; }
     const form = new FormData();
     if (projectFile?.name.toLowerCase().endsWith(".zip")) form.append("file", projectFile); else if (projectFile) form.append("file", projectFile); else form.append("code", code);
     form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
@@ -128,7 +129,7 @@ export default function StudioPage() {
       const response = await fetch("/api/render", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Worker menolak render.");
-      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);
+      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);\n      window.localStorage.setItem("creator-studio-active-render", data.jobId);
       setMessage("Render masuk antrean. Job ID: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
     finally { setRenderBusy(false); }
@@ -266,7 +267,7 @@ export default function StudioPage() {
                   <div className="render-status-head"><div><b>{renderOutputKey ? "Render complete" : renderState === "failed" ? "Render failed" : "Rendering project"}</b><small>{renderProgress < 28 ? "Preparing project files" : renderProgress < 35 ? "Loading composition and external assets" : renderProgress < 95 ? "Rendering video frames" : renderProgress < 100 ? "Saving MP4 to storage" : "Your MP4 is ready"}</small></div><strong>{renderProgress}%</strong></div>
                   <div className="render-steps"><span className={renderProgress >= 5 ? "done" : ""}>Setup</span><span className={renderProgress >= 28 ? "done" : renderProgress >= 5 ? "current" : ""}>Composition</span><span className={renderProgress >= 35 ? "done" : renderProgress >= 28 ? "current" : ""}>Render</span><span className={renderProgress >= 100 ? "done" : renderProgress >= 95 ? "current" : ""}>Export</span></div>
                   <div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div>
-                  {!renderOutputKey && renderState !== "failed" && <span className="render-hint">This stage can take longer when fonts, images, or audio need to load. Progress will not move backwards.</span>}
+                  {!renderOutputKey && renderState !== "failed" && <span className="render-hint">Composition loading can wait for fonts, images, audio metadata, or delayRender(). A timeout will report an error instead of waiting forever.</span>}
                   <span className="render-job-id">Job {renderJobId}</span>
                 </div>}
                 {renderOutputKey && <a className="primary-btn" href={`/api/render/download?key=${encodeURIComponent(renderOutputKey)}`}><Film size={16}/> Download MP4</a>}
