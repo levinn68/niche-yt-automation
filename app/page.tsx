@@ -45,10 +45,6 @@ export default function StudioPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiStyle, setAiStyle] = useState("clean motion graphics");
-  const [aiBusy, setAiBusy] = useState(false);
-  const [generatedMeta, setGeneratedMeta] = useState<{compositionId:string;width:number;height:number;fps:number;durationInFrames:number;entryPoint:string} | null>(null);
   const [renderBusy, setRenderBusy] = useState(false);
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
@@ -110,14 +106,14 @@ export default function StudioPage() {
     if (!zipFile && !code.trim()) { setError("Masukkan source Remotion atau ZIP project."); return; }
     const width = format === "16:9" ? 1920 : 1080;
     const height = format === "16:9" ? 1080 : 1920;
-    const selectedComposition = generatedMeta?.compositionId || compositionId.trim();
+    const selectedComposition = compositionId.trim();
     if (!selectedComposition) { setError("Isi Composition ID project Remotion."); return; }
     const form = new FormData();
     if (zipFile) form.append("file", zipFile); else form.append("code", code);
-    form.append("entryPoint", generatedMeta?.entryPoint || inspect?.entryFile || "src/index.tsx");
+    form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
     form.append("compositionId", selectedComposition);
     form.append("width", String(width)); form.append("height", String(height));
-    form.append("fps", String(generatedMeta?.fps || 30)); form.append("durationInFrames", String(generatedMeta?.durationInFrames || 900));
+    form.append("fps", "30"); form.append("durationInFrames", "900");
     setRenderBusy(true);
     try {
       const response = await fetch("/api/render", { method: "POST", body: form });
@@ -143,7 +139,7 @@ export default function StudioPage() {
   async function analyzeProject() {
     setError(""); setMessage(""); setInspect(null);
     if (!zipFile && !code.trim()) {
-      setError("Upload ZIP project atau paste kode Remotion terlebih dahulu.");
+      setError("Upload ZIP project atau paste source code terlebih dahulu.");
       return;
     }
     setInspectBusy(true);
@@ -225,7 +221,7 @@ export default function StudioPage() {
         <header className="topbar"><div><span className="eyebrow">VIDEO PRODUCTION WORKSPACE</span><h1>{active}</h1></div><div className="top-actions"><button className="account-btn" onClick={() => { window.location.href = "/api/auth/youtube/start"; }}><Youtube size={17}/> Connect YouTube <span className="status-pill">OAuth</span></button><span className="user-avatar">YT</span></div></header>
 
         <div className="content">
-          <section className="welcome-row"><div><div className="eyebrow">CODE TO VIDEO WORKSPACE</div><h2>Turn code into finished video.</h2><p>Paste source atau upload ZIP project. Render MP4, lalu download atau teruskan ke YouTube Shorts.</p></div><div className="phase-tag"><span/> CREATOR STUDIO · WORKSPACE</div></section>
+          <section className="welcome-row"><div><div className="eyebrow">CODE TO VIDEO WORKSPACE</div><h2>Turn code into finished video.</h2><p>Masukkan kode yang sudah siap atau upload project ZIP. Studio ini fokus untuk inspeksi, render MP4, download, dan distribusi.</p></div><div className="phase-tag"><span/> CREATOR STUDIO · WORKSPACE</div></section>
 
           {error && <div className="alert error-alert">{error}</div>}
           {message && <div className="alert success-alert">{message}</div>}
@@ -241,10 +237,10 @@ export default function StudioPage() {
             <div className="stat-card"><span>OUTPUT MP4</span><b>{renderOutputKey ? "1" : "0"}</b><small>{renderOutputKey ? "MP4 siap diunduh" : renderState || "Belum ada render"}</small></div>
           </div>
 
-          <div className="section-heading"><div><h3>Production workspace</h3><p>Upload ZIP project atau paste kode Remotion.</p></div><span className="step-indicator">CODE → MP4</span></div>
+          <div className="section-heading"><div><h3>Render workspace</h3><p>Masukkan project siap-render, periksa konfigurasi, lalu hasilkan MP4.</p></div><span className="step-indicator">CODE → MP4</span></div>
           <div className="workspace-grid">
             <div className="panel project-panel">
-              <div className="panel-title"><div className="icon-box purple"><FileVideo2 size={18}/></div><div><b>Code input</b><small>Paste source code atau upload project ZIP</small></div><span className="optional">SOURCE</span></div>
+              <div className="panel-title"><div className="icon-box purple"><FileVideo2 size={18}/></div><div><b>Code input</b><small>Masukkan source siap-render atau upload project ZIP</small></div><span className="optional">SOURCE</span></div>
               <div className="dropzone"><FolderUp size={27}/><b>{zipFile ? zipFile.name : "Upload project ZIP"}</b><span>ZIP project · maximum 100 MB</span><label className="secondary-btn file-button">Choose ZIP<input type="file" accept=".zip,application/zip" onChange={e => setZipFile(e.target.files?.[0] ?? null)}/></label></div>
               <div className="or-divider"><span>OR PASTE CODE</span></div>
               <textarea className="code-input" value={code} onChange={e => {setCode(e.target.value); setZipFile(null);}} placeholder={"// Paste Remotion TSX / JSX code here\nimport { Composition } from 'remotion';"} />
