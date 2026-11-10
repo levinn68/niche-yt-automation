@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
       archive = new Uint8Array(await zip.arrayBuffer());
     } else {
       let sourceCode = typeof code === "string" ? code : "";
-      if (zip instanceof File && zip.name.toLowerCase().endsWith(".tsx")) {
-        if (zip.size > 2_000_000) return NextResponse.json({ error: "File TSX maksimum 2 MB." }, { status: 413 });
+      if (zip instanceof File && (zip.name.toLowerCase().endsWith(".tsx") || zip.name.toLowerCase().endsWith(".txt"))) {
+        if (zip.size > 2_000_000) return NextResponse.json({ error: "File TSX/TXT maksimum 2 MB." }, { status: 413 });
         sourceCode = await zip.text();
       } else if (zip instanceof File) {
-        return NextResponse.json({ error: "Format upload hanya .tsx atau .zip." }, { status: 415 });
+        return NextResponse.json({ error: "Format upload hanya .tsx, .txt, atau .zip." }, { status: 415 });
       }
-      if (!sourceCode.trim()) return NextResponse.json({ error: "Upload project ZIP, file TSX, atau paste source mandiri." }, { status: 400 });
+      if (!sourceCode.trim()) return NextResponse.json({ error: "Upload project ZIP, file TSX/TXT, atau paste source mandiri." }, { status: 400 });
       if (sourceCode.length > 2_000_000) return NextResponse.json({ error: "Source maksimum 2 MB." }, { status: 413 });
       archive = zipSync({ [entryPoint]: strToU8(sourceCode), "package.json": strToU8(JSON.stringify({ name: "user-remotion-project", private: true, dependencies: { remotion: "^4.0.279", react: "^18.3.1", "react-dom": "^18.3.1" } })) });
     }
