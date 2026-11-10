@@ -339,3 +339,14 @@ footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin
  .voice-layout,.settings-grid{grid-template-columns:1fr}
  .action-row{grid-template-columns:1fr}
 }
+
+
+.upload-options{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);gap:13px}
+.upload-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:5px}
+.upload-buttons .secondary-btn{min-height:38px;padding:0 11px;font-size:9px}
+.format-help{display:flex;flex-direction:column;justify-content:center;gap:9px;padding:17px;border:1px solid var(--edge-soft);border-radius:18px;background:rgba(5,12,20,.38)}
+.format-help>b{color:#eaf5fc;font:600 12px 'Space Grotesk'}
+.format-help>span{color:#bfe0f7;font-size:10px}
+.format-help code{padding:3px 5px;border:1px solid var(--edge-soft);border-radius:6px;background:rgba(255,255,255,.05)}
+.format-help small{color:var(--muted);font-size:10px;line-height:1.6}
+@media(max-width:760px){.upload-options{grid-template-columns:1fr}.upload-buttons{width:100%}.upload-buttons .file-button{flex:1;min-width:105px}}
