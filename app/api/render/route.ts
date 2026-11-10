@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
 
     let inputProps: Record<string, unknown>;
     try { inputProps = JSON.parse(inputPropsRaw); } catch { return NextResponse.json({ error: "inputProps harus JSON valid." }, { status: 400 }); }
-    const jobId = randomUUID();
+    const requestedJobId = String(form.get("clientJobId") || "");
+    const jobId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedJobId) ? requestedJobId : randomUUID();
     const payload = { jobId, zipBase64: Buffer.from(archive).toString("base64"), entryPoint, compositionId, inputProps, width, height, fps, durationInFrames, outputKey: "renders/" + jobId + ".mp4" };
     const response = await fetch(new URL("/jobs/render", workerUrl), { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + workerToken }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
     const result = await response.json();
