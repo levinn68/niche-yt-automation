@@ -56,7 +56,33 @@ export default function StudioPage() {
 
   useEffect(() => { fetch("/api/auth/studio").then(r => r.json()).then(d => setStudioAuthenticated(Boolean(d.authenticated))).catch(() => setStudioAuthenticated(false)).finally(() => setAuthLoading(false)); }, []);
   useEffect(() => { if (!studioAuthenticated) return; fetch("/api/youtube/channels").then(r => r.json()).then(d => { const list = d.channels || []; setChannelOptions(list); setPublishChannel(d.selectedChannelId || list.find((x: {selected?:boolean}) => x.selected)?.id || ""); }).catch(() => {}); }, [studioAuthenticated]);
-  useEffect(() => { if (!renderJobId || !studioAuthenticated) return; let active = true; const poll = async () => { try { const response = await fetch("/api/render/" + encodeURIComponent(renderJobId), { cache: "no-store" }); const data = await response.json(); if (!active || !response.ok) return; setRenderState(data.state || "unknown"); setRenderProgress(typeof data.progress === "number" ? data.progress : Number(data.progress?.progress || 0)); if (data.state === "completed" && data.result?.objectKey) setRenderOutputKey(data.result.objectKey); if (data.state === "failed") setError(data.failedReason || "Render job failed."); } catch {} }; void poll(); const timer = window.setInterval(poll, 4000); return () => { active = false; window.clearInterval(timer); }; }, [renderJobId, studioAuthenticated]);
+  useEffect(() => {
+    if (!renderJobId || !studioAuthenticated) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const response = await fetch("/api/render/" + encodeURIComponent(renderJobId), { cache: "no-store" });
+        const data = await response.json();
+        if (!active || !response.ok) return;
+        const incoming = typeof data.progress === "number" ? data.progress : Number(data.progress?.progress || 0);
+        setRenderState(data.state || "unknown");
+        // BullMQ progress updates can arrive out of order. Never let the UI move backwards.
+        setRenderProgress(current => Math.max(current, Number.isFinite(incoming) ? incoming : 0));
+        if (data.state === "completed" && data.result?.objectKey) {
+          setRenderOutputKey(data.result.objectKey);
+          setRenderProgress(100);
+          active = false;
+        }
+        if (data.state === "failed") {
+          setError(data.failedReason || "Render job failed.");
+          active = false;
+        }
+      } catch {}
+    };
+    void poll();
+    const timer = window.setInterval(() => { if (active) void poll(); }, 3000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [renderJobId, studioAuthenticated]);
 
   async function loginStudio() {
     setLoginError("");
@@ -236,7 +262,13 @@ export default function StudioPage() {
                 <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
                 {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
                 <div className="action-row"><button className="secondary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting..." : "Analyze project"}</button><button className="primary-btn" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button></div>
-                {renderJobId && <div className="notice render-status"><b>{renderOutputKey ? "Render complete" : renderState === "failed" ? "Render failed" : "Rendering project"}</b><span>Job {renderJobId} · {renderProgress}%</span><div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div></div>}
+                {renderJobId && <div className={`notice render-status ${renderState === "failed" ? "render-failed" : renderOutputKey ? "render-complete" : "render-active"}`}>
+                  <div className="render-status-head"><div><b>{renderOutputKey ? "Render complete" : renderState === "failed" ? "Render failed" : "Rendering project"}</b><small>{renderProgress < 28 ? "Preparing project files" : renderProgress < 35 ? "Loading composition and external assets" : renderProgress < 95 ? "Rendering video frames" : renderProgress < 100 ? "Saving MP4 to storage" : "Your MP4 is ready"}</small></div><strong>{renderProgress}%</strong></div>
+                  <div className="render-steps"><span className={renderProgress >= 5 ? "done" : ""}>Setup</span><span className={renderProgress >= 28 ? "done" : renderProgress >= 5 ? "current" : ""}>Composition</span><span className={renderProgress >= 35 ? "done" : renderProgress >= 28 ? "current" : ""}>Render</span><span className={renderProgress >= 100 ? "done" : renderProgress >= 95 ? "current" : ""}>Export</span></div>
+                  <div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div>
+                  {!renderOutputKey && renderState !== "failed" && <span className="render-hint">This stage can take longer when fonts, images, or audio need to load. Progress will not move backwards.</span>}
+                  <span className="render-job-id">Job {renderJobId}</span>
+                </div>}
                 {renderOutputKey && <a className="primary-btn" href={`/api/render/download?key=${encodeURIComponent(renderOutputKey)}`}><Film size={16}/> Download MP4</a>}
               </div>
             </div>
