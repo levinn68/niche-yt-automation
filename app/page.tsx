@@ -72,10 +72,18 @@ export default function StudioPage() {
         if (data.state === "completed" && data.result?.objectKey) {
           setRenderOutputKey(data.result.objectKey);
           setRenderProgress(100);
+          window.localStorage.removeItem("creator-studio-active-render");
           active = false;
         }
         if (data.state === "failed") {
           setError(data.failedReason || "Render job failed.");
+          window.localStorage.removeItem("creator-studio-active-render");
+          active = false;
+        }
+        if (response.status === 404 || data.state === "unknown") {
+          setRenderState("missing");
+          setError("Job render tidak ditemukan di antrean worker. Mulai render baru untuk membuat job baru.");
+          window.localStorage.removeItem("creator-studio-active-render");
           active = false;
         }
       } catch {}
@@ -112,6 +120,8 @@ export default function StudioPage() {
   }
 
   async function startRender() {
+    if (renderSubmitLock.current || renderBusy || (renderJobId && ["queued", "waiting", "active", "delayed", "processing"].includes(renderState))) return;
+    renderSubmitLock.current = true;
     setError(""); setMessage("");
     if (!projectFile && !code.trim()) { setError("Upload file TSX/TXT/ZIP atau paste source mandiri."); renderSubmitLock.current = false; return; }
     const width = format === "16:9" ? 1920 : 1080;
@@ -124,15 +134,17 @@ export default function StudioPage() {
     form.append("compositionId", selectedComposition);
     form.append("width", String(width)); form.append("height", String(height));
     form.append("fps", "30"); form.append("durationInFrames", "900");
+    form.append("clientJobId", crypto.randomUUID());
     setRenderBusy(true);
     try {
       const response = await fetch("/api/render", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Worker menolak render.");
-      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);\n      window.localStorage.setItem("creator-studio-active-render", data.jobId);
+      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);
+      window.localStorage.setItem("creator-studio-active-render", data.jobId);\n      window.localStorage.setItem("creator-studio-active-render", data.jobId);
       setMessage("Render masuk antrean. Job ID: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
-    finally { setRenderBusy(false); }
+    finally { setRenderBusy(false); renderSubmitLock.current = false; }
   }
 
   const nav = [
