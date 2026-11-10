@@ -93,6 +93,8 @@ export default function StudioPage() {
     setError(""); setMessage("");
     if (!renderOutputKey) { setError("Tunggu render MP4 selesai dulu."); return; }
     if (!publishChannel) { setError("Pilih channel YouTube tujuan."); return; }
+    if (format === "16:9" || (inspect?.ratio && inspect.ratio !== "9:16" && format !== "9:16")) { setError("Auto Upload hanya untuk video vertikal 9:16. Render landscape tetap bisa di-download."); return; }
+    if (!title.trim()) { setError("Isi judul Shorts sebelum upload."); return; }
     setPublishBusy(true);
     try {
       const response = await fetch("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ objectKey: renderOutputKey, channelId: publishChannel, title, description, privacyStatus: publishPrivacy, publishAt: publishAt ? new Date(publishAt).toISOString() : undefined }) });
