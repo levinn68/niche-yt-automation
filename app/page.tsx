@@ -238,7 +238,7 @@ export default function StudioPage() {
             <div className="stat-card"><span>PROJECT SOURCE</span><b>{inspect ? "1" : "0"}</b><small>{inspect ? inspect.filename : "Belum ada project diperiksa"}</small></div>
             <div className="stat-card"><span>DETECTED FORMAT</span><b>{inspect?.ratio ?? "—"}</b><small>{inspect?.width && inspect?.height ? inspect.width + " × " + inspect.height : "Menunggu inspeksi"}</small></div>
             <div className="stat-card"><span>VOICE ASSET</span><b>{audioFile ? "1" : "0"}</b><small>{audioFile?.name ?? "Belum ada audio"}</small></div>
-            <div className="stat-card"><span>OUTPUT MP4</span><b>0</b><small>{renderState || "Belum ada render"}</small></div>
+            <div className="stat-card"><span>OUTPUT MP4</span><b>{renderOutputKey ? "1" : "0"}</b><small>{renderOutputKey ? "MP4 siap diunduh" : renderState || "Belum ada render"}</small></div>
           </div>
 
           <div className="section-heading"><div><h3>Production workspace</h3><p>Upload ZIP project atau paste kode Remotion.</p></div><span className="step-indicator">CODE → MP4</span></div>
@@ -251,7 +251,7 @@ export default function StudioPage() {
               <div className="inline-controls"><label>Composition ID</label><input value={compositionId} onChange={e => setCompositionId(e.target.value)} placeholder="Main"/></div><div className="inline-controls"><label>Output format</label><select value={format} onChange={e => setFormat(e.target.value as Format)}><option value="auto">Auto detect from composition</option><option value="9:16">Force 9:16 Portrait</option><option value="16:9">Force 16:9 Landscape</option></select></div>
               <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
               {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
-              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button><button className="secondary-btn full" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button>{renderJobId && <div className="notice">Render job: {renderJobId} · {renderState} · {renderProgress}% {renderOutputKey && "· MP4 ready"}</div>}
+              <button className="primary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting project..." : "Analyze project"}</button><button className="secondary-btn full" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button>{renderJobId && <div className="notice render-status"><b>{renderOutputKey ? "Render complete" : renderState === "failed" ? "Render failed" : "Rendering project"}</b><span>Job {renderJobId} · {renderProgress}%</span><div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div></div>}
             </div>
 
             <div className="panel voice-panel">
