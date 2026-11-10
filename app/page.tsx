@@ -121,7 +121,7 @@ export default function StudioPage() {
 
   async function analyzeProject() {
     setError(""); setMessage(""); setInspect(null);
-    if (!zipFile && !projectFiles.length && !code.trim()) {
+    if (!projectFile && !code.trim()) {
       setError("Upload file TSX/ZIP atau paste source mandiri terlebih dahulu.");
       return;
     }
