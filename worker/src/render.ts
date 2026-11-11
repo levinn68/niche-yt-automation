@@ -22,7 +22,7 @@ function safePath(root: string, name: string) {
   return target;
 }
 
-export async function renderJob(payload: RenderPayload, progress: (value: number) => Promise<void>) {
+export async function renderJob(payload: RenderPayload, progress: (value: number, message?: string) => Promise<void>) {
   const archive = Buffer.from(payload.zipBase64, "base64");
   if (archive.length > MAX_ARCHIVE_BYTES) throw new Error("ZIP max size is 100 MB");
   const work = await mkdtemp(path.join(tmpdir(), "niche-render-"));
@@ -57,6 +57,7 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       await progress(next);
     };
 
+    await progress(2, "Archive berhasil diekstrak. Memeriksa entry point project.");
     await reportProgress(5);
     // User-supplied Remotion code executes in this worker. Deploy this worker as an
     // isolated container with no privileged mounts and restricted network egress.
@@ -64,6 +65,7 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       entryPoint: entry,
       onProgress: (p) => { void reportProgress(Math.min(25, 5 + Math.round(p * 0.2))); }
     });
+    await progress(26, "Bundle selesai. Menjalankan Chromium untuk memuat composition.");
     await reportProgress(28);
     console.info("Render stage: loading composition", { jobId: payload.jobId, compositionId: payload.compositionId });
     // A stalled delayRender() must fail clearly instead of holding the queue indefinitely.
@@ -82,12 +84,14 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       throw new Error(`Composition failed to load within 45 seconds. ${likelyCause} Details: ${detail}`);
     });
     console.info("Render stage: composition loaded", { jobId: payload.jobId, width: composition.width, height: composition.height, fps: composition.fps, durationInFrames: composition.durationInFrames });
+    await progress(35, `Composition siap: ${composition.width}×${composition.height} · ${composition.fps} FPS · ${composition.durationInFrames} frames.`);
     await reportProgress(35);
     if (composition.width !== payload.width || composition.height !== payload.height) {
       throw new Error("Composition dimensions do not match requested output dimensions");
     }
     const outputPath = path.join(outputDir, `${randomUUID()}.mp4`);
-    console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 2 });
+    console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 1 });
+    await progress(35, "Render dimulai. Chromium sedang menyiapkan frame pertama.");
     await renderMedia({
       composition,
       serveUrl,
@@ -95,12 +99,15 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       outputLocation: outputPath,
       inputProps: payload.inputProps ?? {},
       chromiumOptions: { enableMultiProcessOnLinux: true },
-      concurrency: 2,
+      concurrency: 1,
       timeoutInMilliseconds: 120000,
-      onProgress: ({ progress: p }) => { void reportProgress(35 + Math.round(p * 60)); }
+      onProgress: ({ progress: p }) => { void reportProgress(35 + Math.round(p * 60)); void progress(35 + Math.round(p * 60), `Rendering frame: ${Math.round(p * 100)}% selesai.`); }
     });
+    await progress(96, "Semua frame selesai. Membaca file MP4 hasil render.");
     const mp4 = await readFile(outputPath);
+    await progress(98, "Mengunggah MP4 ke storage.");
     await putObject(payload.outputKey, mp4, "video/mp4");
+    await progress(100, "Render selesai. MP4 berhasil disimpan.");
     await reportProgress(100);
     return { objectKey: payload.outputKey, bytes: mp4.byteLength };
   } finally {
