@@ -9,6 +9,6 @@ COPY src ./src
 RUN npm run build && npm prune --omit=dev
 ENV NODE_ENV=production
 # Keep the Node/V8 heap from consuming the entire 1 GB worker container.
-ENV NODE_OPTIONS=--max-old-space-size=512 --max-semi-space-size=16 --expose-gc
+ENV NODE_OPTIONS="--max-old-space-size=512 --max-semi-space-size=16 --expose-gc"
 EXPOSE 8080
 CMD ["npm", "start"]
