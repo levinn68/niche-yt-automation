@@ -20,10 +20,8 @@ export async function POST(request: NextRequest) {
     const compositionId = String(form.get("compositionId") || "");
     const width = Number(form.get("width"));
     const height = Number(form.get("height"));
-    const fps = Number(form.get("fps"));
-    const durationInFrames = Number(form.get("durationInFrames"));
     const inputPropsRaw = String(form.get("inputProps") || "{}");
-    if (!compositionId || ![width, height, fps, durationInFrames].every((n) => Number.isFinite(n) && n > 0)) return NextResponse.json({ error: "Composition ID, dimensions, FPS, and duration are required." }, { status: 400 });
+    if (!compositionId || ![width, height].every((n) => Number.isFinite(n) && n > 0)) return NextResponse.json({ error: "Composition ID, dimensions, FPS, and duration are required." }, { status: 400 });
 
     let archive: Uint8Array;
     if (zip instanceof File && zip.name.toLowerCase().endsWith(".zip")) {
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
     try { inputProps = JSON.parse(inputPropsRaw); } catch { return NextResponse.json({ error: "inputProps harus JSON valid." }, { status: 400 }); }
     const requestedJobId = String(form.get("clientJobId") || "");
     const jobId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedJobId) ? requestedJobId : randomUUID();
-    const payload = { jobId, zipBase64: Buffer.from(archive).toString("base64"), entryPoint, compositionId, inputProps, width, height, fps, durationInFrames, outputKey: "renders/" + jobId + ".mp4" };
+    const payload = { jobId, zipBase64: Buffer.from(archive).toString("base64"), entryPoint, compositionId, inputProps, width, height, outputKey: "renders/" + jobId + ".mp4" };
     const response = await fetch(new URL("/jobs/render", workerUrl), { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + workerToken }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
     const result = await response.json();
     if (!response.ok) return NextResponse.json({ error: result.error || "Worker gagal menerima render." }, { status: response.status });
