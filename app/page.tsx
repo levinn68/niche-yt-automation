@@ -85,6 +85,7 @@ export default function StudioPage() {
           active = false;
         }
         if (data.state === "failed") {
+          setRenderState("failed");
           setError(data.failedReason || "Render job failed.");
           window.localStorage.removeItem("creator-studio-active-render");
           active = false;
@@ -284,11 +285,11 @@ export default function StudioPage() {
                 <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
                 {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
                 <div className="action-row"><button className="secondary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting..." : "Analyze project"}</button><button className="primary-btn" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button></div>
-                {renderJobId && <div className={`notice render-status ${renderState === "failed" ? "render-failed" : renderOutputKey ? "render-complete" : "render-active"}`}>
-                  <div className="render-status-head"><div><b>{renderOutputKey ? "Render complete" : renderState === "failed" ? "Render failed" : "Rendering project"}</b><small>{renderProgress < 28 ? "Preparing project files" : renderProgress < 35 ? "Loading composition and external assets" : renderProgress < 95 ? "Rendering video frames" : renderProgress < 100 ? "Saving MP4 to storage" : "Your MP4 is ready"}</small></div><strong>{renderProgress}%</strong></div>
+                {renderJobId && <div className={`notice render-status ${["failed", "missing"].includes(renderState) ? "render-failed" : renderOutputKey ? "render-complete" : "render-active"}`}>
+                  <div className="render-status-head"><div><b>{renderOutputKey ? "Render complete" : ["failed", "missing"].includes(renderState) ? (renderState === "missing" ? "Render job not found" : "Render failed") : renderState === "queued" ? "Waiting in render queue" : "Rendering project"}</b><small>{renderProgress < 28 ? "Preparing project files" : renderProgress < 35 ? "Loading composition and external assets" : renderProgress < 95 ? "Rendering video frames" : renderProgress < 100 ? "Saving MP4 to storage" : "Your MP4 is ready"}</small></div><strong>{renderProgress}%</strong></div>
                   <div className="render-steps"><span className={renderProgress >= 5 ? "done" : ""}>Setup</span><span className={renderProgress >= 28 ? "done" : renderProgress >= 5 ? "current" : ""}>Composition</span><span className={renderProgress >= 35 ? "done" : renderProgress >= 28 ? "current" : ""}>Render</span><span className={renderProgress >= 100 ? "done" : renderProgress >= 95 ? "current" : ""}>Export</span></div>
                   <div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div>
-                  {!renderOutputKey && renderState !== "failed" && <span className="render-hint">Composition loading can wait for fonts, images, audio metadata, or delayRender(). A timeout will report an error instead of waiting forever.</span>}
+                  {!renderOutputKey && !["failed", "missing"].includes(renderState) && <span className="render-hint">{renderState === "queued" ? "Job tersimpan di antrean. Progress akan mulai saat worker mengambil job." : renderProgress < 28 ? "Menyiapkan dan mem-bundle file project." : renderProgress < 35 ? "Worker sedang memuat Composition. Jika tertahan, periksa delayRender()/continueRender(), font, gambar, dan audio." : "Worker sedang merender frame video dan menyiapkan MP4."}</span>}
                   <span className="render-job-id">Job {renderJobId}</span>
                 </div>}
                 {renderOutputKey && <a className="primary-btn" href={`/api/render/download?key=${encodeURIComponent(renderOutputKey)}`}><Film size={16}/> Download MP4</a>}
