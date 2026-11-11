@@ -50,6 +50,7 @@ export default function StudioPage() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderLogs, setRenderLogs] = useState<Array<{at:string;message:string;level:string}>>([]);
   const [renderOutputKey, setRenderOutputKey] = useState("");
+  const [workerStatus, setWorkerStatus] = useState<{loading:boolean;ok:boolean;error:string;service?:string}>({loading:true,ok:false,error:"Memeriksa koneksi Pterodactyl..." });
   const [channelOptions, setChannelOptions] = useState<Array<{id:string;title:string}>>([]);
   const [publishChannel, setPublishChannel] = useState("");
   const [publishPrivacy, setPublishPrivacy] = useState("private");
@@ -57,6 +58,28 @@ export default function StudioPage() {
   const [publishBusy, setPublishBusy] = useState(false);
 
   useEffect(() => { fetch("/api/auth/studio").then(r => r.json()).then(d => setStudioAuthenticated(Boolean(d.authenticated))).catch(() => setStudioAuthenticated(false)).finally(() => setAuthLoading(false)); }, []);
+  useEffect(() => {
+    if (!studioAuthenticated) return;
+    let active = true;
+    const checkWorker = async () => {
+      try {
+        const response = await fetch("/api/worker/status", { cache: "no-store" });
+        const data = await response.json();
+        if (!active) return;
+        setWorkerStatus({
+          loading: false,
+          ok: Boolean(response.ok && data.ok && data.connected && data.authenticated),
+          error: data.error || "",
+          service: data.worker?.service
+        });
+      } catch {
+        if (active) setWorkerStatus({ loading: false, ok: false, error: "Tidak dapat menghubungi API status Worker." });
+      }
+    };
+    void checkWorker();
+    const timer = window.setInterval(checkWorker, 15000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [studioAuthenticated]);
   useEffect(() => { if (!studioAuthenticated) return; const savedJob = window.localStorage.getItem("creator-studio-active-render"); if (savedJob) setRenderJobId(savedJob); fetch("/api/youtube/channels").then(r => r.json()).then(d => { const list = d.channels || []; setChannelOptions(list); setPublishChannel(d.selectedChannelId || list.find((x: {selected?:boolean}) => x.selected)?.id || ""); }).catch(() => {}); }, [studioAuthenticated]);
   useEffect(() => {
     if (!renderJobId || !studioAuthenticated) return;
@@ -286,6 +309,10 @@ export default function StudioPage() {
                 <div className="detected"><CheckCircle2 size={15}/> Detected: <b>{ratioLabel}</b></div>
                 {inspect && <div className="inspect-result"><b>Inspection result</b><span>{inspect.hasComposition ? "Composition reference found" : "Composition not confirmed"}</span><span>{inspect.hasRemotionImport ? "Remotion import found" : "Remotion import not detected"}</span>{inspect.entryFile && <span>Entry candidate: {inspect.entryFile}</span>}{inspect.filesFound && <span>{inspect.filesFound} files in ZIP</span>}<small>{inspect.note}</small></div>}
                 <div className="action-row"><button className="secondary-btn" onClick={analyzeProject} disabled={inspectBusy}>{inspectBusy ? <LoaderCircle className="spin" size={16}/> : <FileCode2 size={16}/>} {inspectBusy ? "Inspecting..." : "Analyze project"}</button><button className="primary-btn" onClick={startRender} disabled={renderBusy}>{renderBusy ? "Queuing render..." : "Render MP4"}</button></div>
+                <div className={`notice ${workerStatus.ok ? "render-complete" : workerStatus.loading ? "render-active" : "render-failed"}`} style={{marginBottom:12}}>
+                  <b>{workerStatus.loading ? "Connecting to Pterodactyl..." : workerStatus.ok ? "Pterodactyl Worker connected" : "Pterodactyl Worker connection issue"}</b>
+                  <small>{workerStatus.ok ? (workerStatus.service || "Remotion Worker") + " · HTTP and token authentication verified" : workerStatus.error || "Connection not verified"}</small>
+                </div>
                 {renderJobId && <div className={`notice render-status ${["failed", "missing"].includes(renderState) ? "render-failed" : renderOutputKey ? "render-complete" : "render-active"}`}>
                   <div className="render-status-head"><div><b>{renderOutputKey ? "Render complete" : ["failed", "missing"].includes(renderState) ? (renderState === "missing" ? "Render job not found" : "Render failed") : renderState === "queued" ? "Waiting in render queue" : "Rendering project"}</b><small>{renderProgress < 28 ? "Preparing project files" : renderProgress < 35 ? "Loading composition and external assets" : renderProgress < 95 ? "Rendering video frames" : renderProgress < 100 ? "Saving MP4 to storage" : "Your MP4 is ready"}</small></div><strong>{renderProgress}%</strong></div>
                   <div className="render-steps"><span className={renderProgress >= 5 ? "done" : ""}>Setup</span><span className={renderProgress >= 28 ? "done" : renderProgress >= 5 ? "current" : ""}>Composition</span><span className={renderProgress >= 35 ? "done" : renderProgress >= 28 ? "current" : ""}>Render</span><span className={renderProgress >= 100 ? "done" : renderProgress >= 95 ? "current" : ""}>Export</span></div>
