@@ -9,8 +9,7 @@ export const publishQueue = new Queue("niche-publish", { connection });
 
 export type RenderPayload = {
   jobId: string; zipBase64: string; entryPoint: string; compositionId: string;
-  inputProps?: Record<string, unknown>; width: number; height: number; fps: number;
-  durationInFrames: number; outputKey: string;
+  inputProps?: Record<string, unknown>; width: number; height: number; outputKey: string;
 };
 export type PublishPayload = {
   jobId: string; objectKey: string; title: string; description: string; tags?: string[];
