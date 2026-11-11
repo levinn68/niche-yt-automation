@@ -11,8 +11,8 @@ import type { RenderPayload } from "./queue.js";
 const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 300 * 1024 * 1024;
 const MAX_FILES = 1500;
-const MEDIA_CACHE_BYTES = 64 * 1024 * 1024;
-const OFFTHREAD_VIDEO_CACHE_BYTES = 64 * 1024 * 1024;
+const MEDIA_CACHE_BYTES = 16 * 1024 * 1024;
+const OFFTHREAD_VIDEO_CACHE_BYTES = 16 * 1024 * 1024;
 
 function safePath(root: string, name: string) {
   const normalized = name.replace(/\\\\/g, "/");
@@ -39,6 +39,9 @@ function memorySnapshot(stage: string, jobId: string) {
 
 export async function renderJob(payload: RenderPayload, progress: (value: number, message?: string) => Promise<void>) {
   let archive: Buffer | null = Buffer.from(payload.zipBase64, "base64");
+  // BullMQ keeps job.data alive for the full processor lifetime. Release the large
+  // base64 string immediately after decoding so it does not coexist with Chromium.
+  payload.zipBase64 = "";
   if (archive.length > MAX_ARCHIVE_BYTES) throw new Error("ZIP max size is 100 MB");
   const work = await mkdtemp(path.join(tmpdir(), "niche-render-"));
   const projectDir = path.join(work, "project");
@@ -58,6 +61,7 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       const target = safePath(projectDir, name);
       await mkdir(path.dirname(target), { recursive: true });
       await writeFile(target, data);
+      delete entries[name];
     }
 
     const entry = safePath(projectDir, payload.entryPoint);
