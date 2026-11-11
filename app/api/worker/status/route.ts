@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     }, { status: 503 });
   }
 
+  let stage = "health";
   try {
     const healthResponse = await fetch(new URL("/health", workerUrl), {
       cache: "no-store",
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const health = await healthResponse.json();
+    stage = "authenticated server-info";
     const authResponse = await fetch(new URL("/server-info", workerUrl), {
       headers: { Authorization: `Bearer ${workerToken}` },
       cache: "no-store",
@@ -66,11 +68,13 @@ export async function GET(request: NextRequest) {
       }
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown network error";
     return NextResponse.json({
       ok: false,
-      connected: false,
+      connected: stage !== "health",
       authenticated: false,
-      error: error instanceof Error ? error.message : "Worker tidak dapat dijangkau."
+      stage,
+      error: `Gagal pada tahap ${stage}: ${detail}`
     }, { status: 502 });
   }
 }
