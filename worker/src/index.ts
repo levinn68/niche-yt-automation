@@ -29,7 +29,14 @@ function authorized(req: express.Request, res: express.Response, next: express.N
 
 const renderWorker = new Worker<RenderPayload>("niche-render", async (job) => {
   await job.updateProgress(0);
-  return renderJob(job.data, (value) => job.updateProgress(value));
+  const logs: Array<{ at: string; message: string; level: "info" | "success" }> = [];
+  return renderJob(job.data, async (value, message) => {
+    if (message) {
+      logs.push({ at: new Date().toISOString(), message, level: value >= 100 ? "success" : "info" });
+      if (logs.length > 80) logs.shift();
+    }
+    await job.updateProgress({ progress: value, logs });
+  });
 }, { connection, concurrency: Number(process.env.RENDER_CONCURRENCY || 1) });
 
 const publishWorker = new Worker<PublishPayload>("niche-publish", async (job) => {
