@@ -49,7 +49,7 @@ app.post("/jobs/render", authorized, async (req, res) => {
   try {
     const body = req.body as RenderPayload;
     if (!body.jobId || !body.zipBase64 || !body.entryPoint || !body.compositionId || !body.outputKey) return res.status(400).json({ error: "Missing render job fields" });
-    if (![body.width, body.height, body.fps, body.durationInFrames].every((v) => Number.isFinite(v) && v > 0)) return res.status(400).json({ error: "Invalid composition settings" });
+    if (![body.width, body.height].every((v) => Number.isFinite(v) && v > 0)) return res.status(400).json({ error: "Invalid composition dimensions" });
     const job = await renderQueue.add("render", body, {
       jobId: body.jobId, attempts: 1, removeOnComplete: { age: 86400, count: 500 }, removeOnFail: { age: 604800, count: 1000 }
     });
