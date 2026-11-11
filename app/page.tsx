@@ -143,7 +143,6 @@ export default function StudioPage() {
     form.append("entryPoint", inspect?.entryFile || "src/index.tsx");
     form.append("compositionId", selectedComposition);
     form.append("width", String(width)); form.append("height", String(height));
-    form.append("fps", "30"); form.append("durationInFrames", "900");
     form.append("clientJobId", crypto.randomUUID());
     setRenderBusy(true);
     try {
