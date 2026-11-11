@@ -12,7 +12,7 @@ const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 300 * 1024 * 1024;
 const MAX_FILES = 1500;
 const MEDIA_CACHE_BYTES = 16 * 1024 * 1024;
-const OFFTHREAD_VIDEO_CACHE_BYTES = 16 * 1024 * 1024;
+const OFFTHREAD_VIDEO_CACHE_BYTES = 8 * 1024 * 1024;
 
 function safePath(root: string, name: string) {
   const normalized = name.replace(/\\\\/g, "/");
@@ -22,6 +22,11 @@ function safePath(root: string, name: string) {
   const target = path.resolve(root, normalized);
   if (!target.startsWith(root + path.sep)) throw new Error("ZIP path escaped workspace");
   return target;
+}
+
+function releaseNodeMemory() {
+  const forceGc = (globalThis as typeof globalThis & { gc?: () => void }).gc;
+  forceGc?.();
 }
 
 function memorySnapshot(stage: string, jobId: string) {
@@ -74,6 +79,7 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
     names = null;
     archive = null;
     await new Promise<void>((resolve) => setImmediate(resolve));
+    releaseNodeMemory();
     memorySnapshot("after-archive-release", payload.jobId);
 
     let lastProgress = 0;
@@ -94,6 +100,8 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       entryPoint: entry,
       onProgress: (p) => { void reportProgress(Math.min(25, 5 + Math.round(p * 0.2))); }
     });
+    releaseNodeMemory();
+    memorySnapshot("after-bundle", payload.jobId);
     await progress(26, "Bundle selesai. Menjalankan Chromium untuk memuat composition.");
     await reportProgress(28);
     memorySnapshot("before-composition", payload.jobId);
@@ -122,8 +130,8 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       throw new Error("Composition dimensions do not match requested output dimensions");
     }
     const outputPath = path.join(outputDir, `${randomUUID()}.mp4`);
-    console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 1, mediaCacheMB: 64, offthreadVideoCacheMB: 64 });
-    await progress(35, "Render dimulai. Chromium menggunakan cache media terbatas 64 MB.");
+    console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 1, mediaCacheMB: 16, offthreadVideoCacheMB: 8 });
+    await progress(35, "Render dimulai. Chromium menggunakan cache media 16 MB dan video cache 8 MB.");
     let lastRenderPercent = -1;
     let progressWrites = Promise.resolve();
     await renderMedia({
