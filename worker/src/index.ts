@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Worker } from "bullmq";
 import { connection, renderQueue, publishQueue, type RenderPayload, type PublishPayload } from "./queue.js";
 import { renderJob } from "./render.js";
+import { ensureBrowser } from "@remotion/renderer";
 import { publishJob } from "./publish.js";
 import { getObject } from "./storage.js";
 
@@ -12,6 +13,12 @@ const port = Number(process.env.PORT || 8080);
 const token = process.env.WORKER_API_TOKEN;
 if (!token || token.length < 32) throw new Error("WORKER_API_TOKEN must be configured with at least 32 characters");
 const requiredToken: string = token;
+
+// Download/cache the exact Remotion browser before accepting render jobs.
+// This avoids making the first render wait for a 100+ MB browser download.
+console.info("Preparing Remotion browser...");
+await ensureBrowser();
+console.info("Remotion browser ready.");
 
 function authorized(req: express.Request, res: express.Response, next: express.NextFunction) {
   const supplied = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
