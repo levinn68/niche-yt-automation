@@ -48,6 +48,7 @@ export default function StudioPage() {
   const [renderJobId, setRenderJobId] = useState("");
   const [renderState, setRenderState] = useState("");
   const [renderProgress, setRenderProgress] = useState(0);
+  const [renderLogs, setRenderLogs] = useState<Array<{at:string;message:string;level:string}>>([]);
   const [renderOutputKey, setRenderOutputKey] = useState("");
   const [channelOptions, setChannelOptions] = useState<Array<{id:string;title:string}>>([]);
   const [publishChannel, setPublishChannel] = useState("");
@@ -75,6 +76,7 @@ export default function StudioPage() {
           return;
         }
         const incoming = typeof data.progress === "number" ? data.progress : Number(data.progress?.progress || 0);
+        if (Array.isArray(data.progress?.logs)) setRenderLogs(data.progress.logs);
         setRenderState(data.state || "unknown");
         // BullMQ progress updates can arrive out of order. Never let the UI move backwards.
         setRenderProgress(current => Math.max(current, Number.isFinite(incoming) ? incoming : 0));
@@ -149,7 +151,7 @@ export default function StudioPage() {
       const response = await fetch("/api/render", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Worker menolak render.");
-      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0);
+      setRenderJobId(data.jobId); setRenderState("queued"); setRenderOutputKey(""); setRenderProgress(0); setRenderLogs([{at:new Date().toISOString(),message:"Job berhasil dikirim ke antrean render.",level:"info"}]);
       window.localStorage.setItem("creator-studio-active-render", data.jobId);
       setMessage("Render masuk antrean. Job ID: " + data.jobId);
     } catch (err) { setError(err instanceof Error ? err.message : "Render gagal dimulai."); }
@@ -289,6 +291,7 @@ export default function StudioPage() {
                   <div className="render-steps"><span className={renderProgress >= 5 ? "done" : ""}>Setup</span><span className={renderProgress >= 28 ? "done" : renderProgress >= 5 ? "current" : ""}>Composition</span><span className={renderProgress >= 35 ? "done" : renderProgress >= 28 ? "current" : ""}>Render</span><span className={renderProgress >= 100 ? "done" : renderProgress >= 95 ? "current" : ""}>Export</span></div>
                   <div className="progress-track"><i style={{width: `${Math.max(0,Math.min(100,renderProgress))}%`}}/></div>
                   {!renderOutputKey && !["failed", "missing"].includes(renderState) && <span className="render-hint">{renderState === "queued" ? "Job tersimpan di antrean. Progress akan mulai saat worker mengambil job." : renderProgress < 28 ? "Menyiapkan dan mem-bundle file project." : renderProgress < 35 ? "Worker sedang memuat Composition. Jika tertahan, periksa delayRender()/continueRender(), font, gambar, dan audio." : "Worker sedang merender frame video dan menyiapkan MP4."}</span>}
+                  <div className="render-terminal" aria-live="polite"><div className="terminal-top"><span className="terminal-lights"><i/><i/><i/></span><b><span/> RENDER CONSOLE</b><small>{renderState === "failed" ? "ERROR" : renderOutputKey ? "DONE" : "LIVE"}</small></div><div className="terminal-body">{(renderLogs.length ? renderLogs : [{at:new Date().toISOString(),message:"Menunggu log dari render worker...",level:"info"}]).slice(-24).map((log,index) => <div className="terminal-line" key={`${log.at}-${index}`}><time>{new Date(log.at).toLocaleTimeString("id-ID",{hour12:false})}</time><span className={log.level === "success" ? "terminal-success" : ""}>{log.message}</span></div>)}{!["failed","missing"].includes(renderState) && !renderOutputKey && <div className="terminal-cursor">▍ Worker sedang berjalan...</div>}</div></div>
                   <span className="render-job-id">Job {renderJobId}</span>
                 </div>}
                 {renderOutputKey && <a className="primary-btn" href={`/api/render/download?key=${encodeURIComponent(renderOutputKey)}`}><Film size={16}/> Download MP4</a>}
