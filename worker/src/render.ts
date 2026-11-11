@@ -65,18 +65,23 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       onProgress: (p) => { void reportProgress(Math.min(25, 5 + Math.round(p * 0.2))); }
     });
     await reportProgress(28);
-    // Root component loading may wait for fonts, images, audio metadata or custom
-    // delayRender() calls. Give slow but valid assets more time than Remotion's 30s default.
+    console.info("Render stage: loading composition", { jobId: payload.jobId, compositionId: payload.compositionId });
+    // A stalled delayRender() must fail clearly instead of holding the queue indefinitely.
     const composition = await selectComposition({
       serveUrl,
       id: payload.compositionId,
       inputProps: payload.inputProps ?? {},
-      timeoutInMilliseconds: 60000,
+      timeoutInMilliseconds: 45000,
       chromiumOptions: { enableMultiProcessOnLinux: true }
     }).catch((error: unknown) => {
       const detail = error instanceof Error ? error.message : String(error);
-      throw new Error(`Composition loading timed out or failed after 60 seconds. Check delayRender()/continueRender(), fonts, images, and audio metadata. Details: ${detail}`);
+      console.error("Composition loading failed", { jobId: payload.jobId, compositionId: payload.compositionId, detail });
+      const likelyCause = /delayRender|Loading root component/i.test(detail)
+        ? "A delayRender() handle was not cleared. Check every delayRender() call and ensure continueRender(handle) runs on both success and error paths. Also verify remote fonts, images, and audio URLs load inside Chromium."
+        : "Verify the Composition ID, root registration, external assets, and browser console errors.";
+      throw new Error(`Composition failed to load within 45 seconds. ${likelyCause} Details: ${detail}`);
     });
+    console.info("Render stage: composition loaded", { jobId: payload.jobId, width: composition.width, height: composition.height, fps: composition.fps, durationInFrames: composition.durationInFrames });
     await reportProgress(35);
     if (composition.width !== payload.width || composition.height !== payload.height) {
       throw new Error("Composition dimensions do not match requested output dimensions");
@@ -85,6 +90,7 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
       throw new Error("Composition fps/duration do not match the submitted render settings");
     }
     const outputPath = path.join(outputDir, `${randomUUID()}.mp4`);
+    console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 2 });
     await renderMedia({
       composition,
       serveUrl,
