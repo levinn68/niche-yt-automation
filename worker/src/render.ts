@@ -86,9 +86,6 @@ export async function renderJob(payload: RenderPayload, progress: (value: number
     if (composition.width !== payload.width || composition.height !== payload.height) {
       throw new Error("Composition dimensions do not match requested output dimensions");
     }
-    if (composition.fps !== payload.fps || composition.durationInFrames !== payload.durationInFrames) {
-      throw new Error("Composition fps/duration do not match the submitted render settings");
-    }
     const outputPath = path.join(outputDir, `${randomUUID()}.mp4`);
     console.info("Render stage: rendering frames", { jobId: payload.jobId, concurrency: 2 });
     await renderMedia({
